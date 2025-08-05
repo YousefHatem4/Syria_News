@@ -20,7 +20,7 @@ export default function Navbar() {
 
     return (
         <>
-            <nav className="bg-[#FFFFFFCC] fixed z-20 top-6 left-1/2 -translate-x-1/2 shadow-md rounded-xl w-[95%] max-w-[1386px] h-auto md:h-[75px] px-4 sm:px-6 md:px-[11px] py-4 md:py-[7px]">
+            <nav className="bg-[#FFFFFFCC] absolute z-20 top-6 left-1/2 -translate-x-1/2 shadow-md rounded-xl w-[95%] max-w-[1386px] h-auto md:h-[75px] px-4 sm:px-6 md:px-[11px] py-4 md:py-[7px]">
                 <div className="flex flex-wrap items-center justify-between w-full md:py-2">
                     {/* Logo */}
                     <Link to={'/'} className="flex items-center space-x-3 rtl:space-x-reverse">
