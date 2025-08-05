@@ -1,0 +1,13 @@
+@import "tailwindcss";
+
+.my-ruwudu-text {
+  font-family: "Ruwudu", serif;
+}
+
+.my-Poppins-text {
+  font-family: "Poppins", sans-serif;
+}
+
+.my-Tajawal-text {
+  font-family: "Tajawal", sans-serif;
+}
