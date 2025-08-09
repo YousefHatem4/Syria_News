@@ -3,8 +3,11 @@ import style from './NewPass.module.css'
 import { faEnvelope } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faUser, faLock, faEye, faEyeSlash, faUserPlus } from '@fortawesome/free-solid-svg-icons';
-
 import { useNavigate } from 'react-router-dom';
+
+// Added imports for toast
+import toast, { Toaster } from 'react-hot-toast';
+import { FaCheckCircle } from 'react-icons/fa';
 
 export default function NewPass() {
 
@@ -14,8 +17,30 @@ export default function NewPass() {
 
     const handleSubmit = (e) => {
         e.preventDefault();
-        navigate('/login');
+
+        toast.custom(
+            (t) => (
+                <div
+                    className={`flex items-center gap-2 px-4 py-2 bg-white rounded-lg shadow-md border border-gray-200 ${t.visible ? 'animate-enter' : 'animate-leave'
+                        }`}
+                    dir="rtl"
+                >
+                    <FaCheckCircle className="w-6 h-6 text-green-600" />
+                    <span className="text-sm font-medium text-gray-800">
+                        تم حفظ كلمه مرورك الجديده
+                    </span>
+                </div>
+            ),
+            { duration: 2000 }
+        );
+
+
+        // Navigate after short delay
+        setTimeout(() => {
+            navigate('/login');
+        }, 1500);
     };
+
     const togglePasswordVisibility = () => {
         setShowPassword(!showPassword);
     };
@@ -23,12 +48,17 @@ export default function NewPass() {
     const toggleConfirmPasswordVisibility = () => {
         setShowConfirmPassword(!showConfirmPassword);
     };
+
     return <>
+        {/* Toast container */}
+        <Toaster />
+
         <div className='[background:linear-gradient(to_bottom_right,_#004025_0%,_#FFFFFFCC_80%,_transparent_100%)] min-h-[110vh] flex items-center justify-center p-4'>
             <section className='w-full max-w-[633px] h-auto md:h-[646px] -mt-20 md:mt-20 '>
                 <div className='w-full h-[200px] md:h-[318px] bg-[linear-gradient(to_bottom,_#2D4639,_#6FAC8C)] rounded-t-2xl flex justify-center items-center flex-col p-4'>
                     <h1 className='text-[24px] md:text-[28px] text-[#FFFFFF] my-Tajawal-text leading-[100%] mb-4 md:mb-6 font-semibold text-center'>
-                        تعيين كلمة مرور جديدة                               </h1>
+                        تعيين كلمة مرور جديدة
+                    </h1>
                     <p className='text-[#F2F2F2] font-medium text-[16px] md:text-xl text-center'>
                         اختر كلمة مرور قوية لحماية حسابك
                     </p>
@@ -38,7 +68,8 @@ export default function NewPass() {
                         {/* Password Field */}
                         <div className="relative w-[90%] sm:w-[350px] md:w-[425px] mb-5 md:mb-7">
                             <label htmlFor="password" className="block mb-3 md:mb-4 text-[16px] md:text-[20px] leading-[100%] font-medium text-[#000000] text-end my-Poppins-tex">
-                                كلمة المرور الجديد                            </label>
+                                كلمة المرور الجديد
+                            </label>
                             <FontAwesomeIcon
                                 icon={faLock}
                                 className="absolute right-3 top-[52px] md:top-14 transform -translate-y-1/2 text-gray-400 pointer-events-none"
@@ -85,7 +116,8 @@ export default function NewPass() {
                             type="submit"
                             className='w-full  max-w-[321px] cursor-pointer h-[40px] md:h-[27px] bg-[#00844B] text-white text-[12px] rounded-sm hover:bg-[#006C3C] transition duration-300 mb-4'
                         >
-                            حفظ كلمه المرور                        </button>
+                            حفظ كلمه المرور
+                        </button>
                     </form>
                 </div>
             </section>

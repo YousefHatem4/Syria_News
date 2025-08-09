@@ -45,7 +45,7 @@ export default function Login() {
                                 </label>
                                 <FontAwesomeIcon
                                     icon={faEnvelope}
-                                    className='absolute right-3 top-[42px] sm:top-[50px] md:top-14 transform -translate-y-1/2 text-gray-400 pointer-events-none'
+                                    className='absolute right-3 top-[52px] sm:top-[55px] md:top-16 transform -translate-y-1/2 text-gray-400 pointer-events-none'
                                 />
                                 <input
                                     type="email"
@@ -64,7 +64,7 @@ export default function Login() {
                                 </label>
                                 <FontAwesomeIcon
                                     icon={faLock}
-                                    className='absolute right-3 top-[42px] sm:top-[50px] md:top-14 transform -translate-y-1/2 text-gray-400 pointer-events-none'
+                                    className='absolute right-3 top-[52px] sm:top-[50px] md:top-16 transform -translate-y-1/2 text-gray-400 pointer-events-none'
                                 />
                                 <input
                                     type={showPassword ? 'text' : 'password'}
@@ -77,7 +77,7 @@ export default function Login() {
                                 <FontAwesomeIcon
                                     icon={showPassword ? faEye : faEyeSlash}
                                     onClick={togglePasswordVisibility}
-                                    className='absolute left-3 top-[42px] sm:top-[50px] md:top-14 transform -translate-y-1/2 text-gray-400 cursor-pointer'
+                                    className='absolute left-3 top-[52px] sm:top-[50px] md:top-16 transform -translate-y-1/2 text-gray-400 cursor-pointer'
                                 />
                             </div>
 
