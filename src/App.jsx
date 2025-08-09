@@ -16,6 +16,7 @@ import NewsDetails from './Components/NewsDetails/NewsDetails'
 import Profile from './Components/Profile/Profile'
 import VerfiyCode from './Components/VerfiyCode/VerfiyCode'
 import UserContextProvider from './Components/Context/userContext'
+import { Toaster } from 'react-hot-toast'
 
 
 
@@ -46,6 +47,7 @@ function App() {
   return <>
     <UserContextProvider>
       <RouterProvider router={routers}></RouterProvider>
+      <Toaster position="top-center" reverseOrder={false} />
     </UserContextProvider>
   </>
 }
