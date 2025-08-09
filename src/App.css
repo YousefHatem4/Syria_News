@@ -12,6 +12,10 @@
   font-family: "Tajawal", sans-serif;
 }
 
+.my-cairo-text {
+    font-family: "Cairo", sans-serif;
+}
+
 @keyframes enter {
   0% {
     opacity: 0;
