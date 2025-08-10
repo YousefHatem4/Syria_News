@@ -53,7 +53,7 @@ export default function Navbar() {
                                 </button>
                             </>
                         ) : (
-                            <Link to={'/register'}>
+                            <Link to={'/login'}>
                                 <button
                                     type="button"
                                     className="text-[#000000C4] cursor-pointer bg-[#E9C882] py-2 px-3 font-bold rounded-lg text-sm sm:text-lg text-center my-Tajawal-text transition-all duration-300 hover:bg-[#d6b36f]"
