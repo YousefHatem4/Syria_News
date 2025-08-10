@@ -30,7 +30,7 @@ export default function Footer() {
     return (
         <footer className='bg-[#1B1D1E] min-h-[38vh] px-7 py-22'>
             <section
-                className='flex lg:flex-row flex-col lg:relative items-center lg:items-baseline justify-center lg:gap-40 gap-8 text-center lg:text-right'
+                className='flex lg:flex-row flex-col lg:relative items-center lg:items-baseline justify-center lg:gap-40 gap-15 text-center lg:text-right'
             >
                 {/* Newsletter */}
                 <div className='bg-[#E9EFF0] h-[160px] p-3 flex flex-col justify-center'>
