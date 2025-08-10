@@ -23,71 +23,71 @@ export default function Footer() {
                     </span>
                 </div>
             ),
-            { duration: 2000 } // auto-close after 2 seconds
+            { duration: 2000 }
         );
     };
 
     return (
-        <footer className='bg-[#1B1D1E] min-h-[38vh] px-7 py-22'>
+        <footer className='bg-[#1B1D1E] px-7 py-15'>
             <section
                 className='flex lg:flex-row flex-col lg:relative items-center lg:items-baseline justify-center lg:gap-40 gap-15 text-center lg:text-right'
             >
                 {/* Newsletter */}
-                <div className='bg-[#E9EFF0] h-[160px] p-3 flex flex-col justify-center'>
-                    <h1 className='text-right text-[#000000] leading-[100%] font-semibold text-[27px] my-Poppins-text'>
+                <div className='bg-[#E9EFF0] rounded-2xl p-6 flex flex-col justify-center shadow-sm'>
+                    <h1 className='text-right text-black leading-tight font-semibold text-2xl my-Poppins-text'>
                         اشترك الآن بالنشرة الإخبارية
                     </h1>
-                    <p className='text-[#000000] text-sm my-Tajawal-text text-right mt-3'>
+                    <p className='text-black text-sm my-Tajawal-text text-right mt-2 opacity-80'>
                         نشرة إخبارية ترسل مباشرة لبريدك الإلكتروني يوميا
                     </p>
                     <form
-                        className='flex flex-col items-end lg:items-start'
+                        className='flex flex-col items-end mt-4 gap-3'
                         onSubmit={handleSubscribe}
                     >
                         <input
                             type="email"
                             id="email"
-                            className="mb-2 bg-[#FFFFFF] mt-2 focus:border-[#8A8A8A] text-gray-900 text-[12px] rounded-sm w-[321px] h-[27px] p-2.5 cursor-pointer text-right"
-                            placeholder=" أدخل بريدك الإليكتروني"
+                            className="bg-white border border-gray-200 focus:border-gray-400 text-gray-900 text-sm rounded-md w-[321px] p-2.5 text-right shadow-sm outline-none transition"
+                            placeholder="أدخل بريدك الإلكتروني"
                             required
                         />
                         <button
                             type='submit'
-                            className='w-[321px] h-[27px] py-4 flex items-center justify-center bg-[#00844B] text-[#FFFFFF] leading-[100%] text-[15px] my-Poppins-text rounded-sm mt-0'
+                            className='w-[321px] h-[40px] flex items-center justify-center bg-[#00844B] hover:bg-[#006c3d] text-white font-medium text-sm my-Poppins-text rounded-md transition-colors duration-200'
                         >
-                            إاشتراك
+                            اشتراك
                         </button>
                     </form>
                 </div>
 
                 {/* Divider */}
-                <div className='bg-[#FFFFFF] h-[160px] w-[0.5px] absolute lg:block hidden end-250'></div>
+                <div className='bg-white/20 h-[215px] w-px absolute lg:block hidden end-250'></div>
 
                 {/* Social Media */}
                 <div className='flex flex-col items-center lg:items-end ms-0 lg:ms-21'>
-                    <h1 className='text-[#FFFFFF] text-[28px] font-bold my-Tajawal-text'>
+                    <h1 className='text-white text-2xl font-bold my-Tajawal-text'>
                         تابعنا
                     </h1>
                     <div className="flex gap-4 mt-4">
-                        <FontAwesomeIcon icon={faFacebookF} className="text-white text-2xl cursor-pointer hover:text-[#3b5998]" />
-                        <FontAwesomeIcon icon={faXTwitter} className="text-white text-2xl cursor-pointer hover:text-[#1da1f2]" />
-                        <FontAwesomeIcon icon={faInstagram} className="text-white text-2xl cursor-pointer hover:text-[#e1306c]" />
+                        <FontAwesomeIcon icon={faFacebookF} className="text-white text-xl cursor-pointer hover:text-[#3b5998] transition-colors duration-200" />
+                        <FontAwesomeIcon icon={faXTwitter} className="text-white text-xl cursor-pointer hover:text-[#1da1f2] transition-colors duration-200" />
+                        <FontAwesomeIcon icon={faInstagram} className="text-white text-xl cursor-pointer hover:text-[#e1306c] transition-colors duration-200" />
                     </div>
                 </div>
 
                 {/* Links */}
                 <div className='text-center lg:text-right'>
                     <ul>
-                        <li className='text-[#FFFFFF] text-[28px] font-bold my-Tajawal-text mb-3'>
+                        <li className='text-white text-2xl font-bold my-Tajawal-text mb-3'>
                             روابط مهمه
                         </li>
-                        <li className='text-[#FFFFFF] text-[14px] my-Tajawal-text mb-3'>
+                        <li className='text-white text-sm my-Tajawal-text mb-2 hover:opacity-80 transition cursor-pointer'>
                             سياسة الخصوصية
                         </li>
-                        <li className='text-[#FFFFFF] text-[14px] my-Tajawal-text mb-3'>
+                        <li className='text-white text-sm my-Tajawal-text mb-2 hover:opacity-80 transition cursor-pointer'>
                             شروط الاستخدام
                         </li>
-                        <li className='text-[#FFFFFF] text-[14px] my-Tajawal-text'>
+                        <li className='text-white text-sm my-Tajawal-text hover:opacity-80 transition cursor-pointer'>
                             اتصل بنا
                         </li>
                     </ul>
@@ -95,13 +95,13 @@ export default function Footer() {
 
                 {/* About */}
                 <div className='flex flex-col items-center lg:items-end'>
-                    <h1 className='text-[#FFFFFF] text-[28px] font-bold my-Tajawal-text mb-3'>
+                    <h1 className='text-white text-2xl font-bold my-Tajawal-text mb-3'>
                         أخبار سوريا
                     </h1>
-                    <p className='text-[#FFFFFF] text-[14px] my-Tajawal-text text-center lg:text-right'>
+                    <p className='text-white text-sm my-Tajawal-text text-center lg:text-right opacity-80 leading-relaxed'>
                         منصة إخبارية موثوقة تقدم أحدث الأخبار
                     </p>
-                    <p className='text-[#FFFFFF] text-[14px] my-Tajawal-text text-center lg:text-right'>
+                    <p className='text-white text-sm my-Tajawal-text text-center lg:text-right opacity-80 leading-relaxed'>
                         والتحليلات
                     </p>
                 </div>

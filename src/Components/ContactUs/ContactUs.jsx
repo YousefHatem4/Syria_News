@@ -6,7 +6,7 @@ export default function ContactUs() {
     return (
         <section className='[background:linear-gradient(to_bottom_right,#004025_0%,#FFFFFFCC_50%,#004025_100%)] min-h-[140vh] flex items-center justify-center px-4'>
             {/* big box */}
-            <section className='flex w-[700px] max-w-full h-auto md:h-[820px] p-[49px] md:p-[49px] p-6 flex-col items-center gap-[40px] shrink-0 mt-10
+            <section className='flex w-[700px] max-w-full h-auto md:h-[820px] p-[49px] md:p-[49px]  flex-col items-center gap-[40px] shrink-0 mt-10
                 rounded-[20px] border border-[rgba(227,190,112,0.20)]
                 bg-gradient-to-br from-[rgba(45,70,57,0.90)] to-[rgba(27,29,30,0.95)]
                 shadow-[0_25px_50px_-12px_rgba(0,132,75,0.25),_0_0_0_1px_rgba(233,200,130,0.10)]
