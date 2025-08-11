@@ -2,16 +2,18 @@ import React, { useState } from 'react'
 import style from './Profile.module.css'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faUser as faUserRegular, faAddressCard } from '@fortawesome/free-regular-svg-icons';
-import { faCamera, faUser as faUserSolid, faLock } from '@fortawesome/free-solid-svg-icons';
+import { faCamera, faUser as faUserSolid, faLock , faChartLine } from '@fortawesome/free-solid-svg-icons';
 import UserInfo from './UserInfo';
 import ChangePass from './ChangePass';
 import UserPosts from './UserPosts';
+import Statistics from './Statistics';
 
 
 export default function Profile() {
     const [info, setInfo] = useState(true);
     const [changePass, setChangePass] = useState(false);
     const [posts, setPosts] = useState(false);
+    const [statistics, setStatistics] = useState(false);
 
     return <>
         <section className='bg-[linear-gradient(167deg,#2D4639_0%,#1B1D1E_88.4%)] min-h-[150vh] pt-45 pb-20 '>
@@ -22,8 +24,8 @@ export default function Profile() {
                     <div className=' flex w-[150px] h-[150px] flex-col justify-center items-center shrink-0 rounded-[75px] flex-[1_0_0]  border-[3px] border-[#E9C882] shadow-[0_5px_15px_0_rgba(0,0,0,0.30)]'>
                         <FontAwesomeIcon icon={faUserRegular} className="text-[#E9C882] text-3xl" />
                     </div>
-                    <div className='flex w-[40px] h-[40px] justify-center items-center absolute top-26 left-3 rounded-[20px] bg-[#00844B]'>
-                        <FontAwesomeIcon icon={faCamera} className="text-white text-right font-[Font_Awesome_5_Free] text-[16px] not-italic font-black leading-[16px] cursor-pointer" />
+                    <div className='flex w-[40px] h-[40px] justify-center items-center absolute top-26 left-3 rounded-[20px] bg-[#00844B] cursor-pointer'>
+                        <FontAwesomeIcon icon={faCamera} className="text-white text-right font-[Font_Awesome_5_Free] text-[16px] not-italic font-black leading-[16px] " />
                     </div>
                 </section>
 
@@ -40,6 +42,7 @@ export default function Profile() {
                     {info && <UserInfo />}
                     {changePass && <ChangePass />}
                     {posts && <UserPosts />}
+                    {statistics && <Statistics />}
                 </div>
 
                 {/* sidebar */}
@@ -116,11 +119,36 @@ export default function Profile() {
                                     setInfo(false);
                                     setChangePass(false);
                                     setPosts(true);
+                                    setStatistics(false);
                                 }}
                                 className='text-white cursor-pointer text-right me-1 font-[Cairo] text-base not-italic font-normal leading-[27.2px] flex items-center gap-2'
                             >
                                 <h1>منشوراتي</h1>
                                 <FontAwesomeIcon icon={faAddressCard} />
+                            </div>
+                        )}
+
+                        {/* item 4 */}
+                        {statistics ? (
+                            // active
+                            <div className='flex pl-[150px] pr-[12.79px] pt-[11.79px] pb-[12.8px] items-center gap-[12.8px] self-stretch rounded-[5px] bg-[rgba(233,200,130,0.10)] shadow-[0_4px_4px_rgba(0,0,0,0.25)]'>
+                                <div className='text-[var(--light-sand-beige-e-9-c-882,#E9C882)] text-right font-[Cairo] text-base not-italic font-normal leading-[27.2px] flex items-center gap-2 -me-2'>
+                                    <h1>الإحصائيات</h1>
+                                    <FontAwesomeIcon icon={faChartLine} />
+                                </div>
+                            </div>
+                        ) : (
+                            <div
+                                onClick={() => {
+                                    setInfo(false);
+                                    setChangePass(false);
+                                    setPosts(false);
+                                    setStatistics(true);
+                                }}
+                                className='text-white cursor-pointer text-right me-1 font-[Cairo] text-base not-italic font-normal leading-[27.2px] flex items-center gap-2'
+                            >
+                                    <h1>الإحصائيات</h1>
+                                    <FontAwesomeIcon icon={faChartLine} />
                             </div>
                         )}
 
