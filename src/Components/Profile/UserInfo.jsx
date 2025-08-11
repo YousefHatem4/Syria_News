@@ -31,7 +31,7 @@ export default function UserInfo() {
 
                 {/* fourth input */}
                 <div className='flex flex-col items-end gap-2 mt-6'>
-                    <label for="tel" class="text-[#E9C882] font-[Cairo] text-base not-italic font-normal leading-[27.2px]">رقم الهاتف</label>
+                    <label for="tel" class="text-[#E9C882] font-[Cairo] text-base not-italic font-normal leading-[27.2px]">نبذة عني</label>
                     <textarea id="message" rows="4" class="text-white h-[134.5px] resize-none flex w-[738px] py-[13.8px] px-[17px] justify-center items-start rounded-[5px] border border-[rgba(233,200,130,0.20)] bg-[rgba(255,255,255,0.05)] text-right font-[Cairo] text-base not-italic font-normal leading-normal" defaultValue="...مراسل سياسي متخصص في شؤون المنطقة، أعمل في مجال الصحافة منذ أكثر من 10 سنوات"></textarea>
                 </div>
 
