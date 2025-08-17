@@ -4,11 +4,15 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faUser, faEnvelope, faLock, faEye, faEyeSlash, faUserPlus } from '@fortawesome/free-solid-svg-icons';
 import { Link } from 'react-router-dom';
 import { useFormik } from 'formik';
+import * as Yup from 'yup';
 
 export default function Register() {
     const [showPassword, setShowPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
     const [agreeTerms, setAgreeTerms] = useState(false);
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [registrationError, setRegistrationError] = useState(null);
+    const [registrationSuccess, setRegistrationSuccess] = useState(false);
 
     const togglePasswordVisibility = () => {
         setShowPassword(!showPassword);
@@ -22,27 +26,70 @@ export default function Register() {
         setAgreeTerms(e.target.checked);
     };
 
-    const handleSubmit = (e) => {
-        e.preventDefault();
+    const validationSchema = Yup.object({
+        // name: Yup.string()
+        //     .required('الإسم الكامل مطلوب')
+        //     .min(3, 'يجب أن يكون الإسم على الأقل 3 أحرف'),
+        // email: Yup.string()
+        //     .email('البريد الإلكتروني غير صحيح')
+        //     .required('البريد الإلكتروني مطلوب'),
+        // password: Yup.string()
+        //     .required('كلمة المرور مطلوبة')
+        //     .min(6, 'يجب أن تكون كلمة المرور على الأقل 6 أحرف'),
+        // confirmPassword: Yup.string()
+        //     .oneOf([Yup.ref('password'), null], 'كلمات المرور غير متطابقة')
+        //     .required('تأكيد كلمة المرور مطلوب')
+    });
+
+    async function register(values, { setSubmitting, resetForm }) {
         if (!agreeTerms) {
-            alert("يجب الموافقة على الشروط والأحكام أولاً.");
+            setRegistrationError("يجب الموافقة على الشروط والأحكام أولاً.");
+            setSubmitting(false);
             return;
         }
-        // Handle form submission logic here
-        alert("تم إنشاء الحساب بنجاح");
-    };
 
-    async function register(data) {
+        setIsSubmitting(true);
+        setRegistrationError(null);
 
+        try {
+            const response = await fetch('https://newsyriabackend-production.up.railway.app/api/v1/registration', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    name: values.name,
+                    email: values.email,
+                    password: values.password
+                })
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(data.message || 'حدث خطأ أثناء التسجيل');
+            }
+
+            setRegistrationSuccess(true);
+            resetForm();
+        } catch (error) {
+            setRegistrationError(error.message || 'حدث خطأ أثناء التسجيل. يرجى المحاولة مرة أخرى.');
+        } finally {
+            setIsSubmitting(false);
+            setSubmitting(false);
+        }
     }
 
     const formik = useFormik({
         initialValues: {
             name: "",
             email: "",
-            password: ""
-        }, onSubmit: register
-    })
+            password: "",
+            confirmPassword: ""
+        },
+        validationSchema,
+        onSubmit: register
+    });
 
     return (
         <>
@@ -54,95 +101,131 @@ export default function Register() {
                             <h1 className='my-Tajawal-text font-bold leading-[100%] text-[24px] md:text-[28px]'>إنشاء حساب جديد</h1>
                             <p className='text-[12px] md:text-[14px] text-[#8A8A8A] leading-[100%] mt-3 md:mt-4 my-Tajawal-text'>املأ البيانات التالية للتسجيل</p>
 
-                            <form className='mt-8 md:mt-15' onSubmit={handleSubmit}>
+                            {registrationSuccess && (
+                                <div className="mt-4 p-3 bg-green-100 text-green-700 rounded text-sm">
+                                    تم إنشاء الحساب بنجاح! يمكنك الآن تسجيل الدخول.
+                                </div>
+                            )}
+
+                            {registrationError && (
+                                <div className="mt-4 p-3 bg-red-100 text-red-700 rounded text-sm">
+                                    {registrationError}
+                                </div>
+                            )}
+
+                            <form className='mt-8 md:mt-15 flex flex-col items-center' onSubmit={formik.handleSubmit}>
                                 {/* Full Name Field */}
-                                <div className="relative w-[90%] sm:w-[350px] md:w-[425px] mb-5 md:mb-7">
-                                    <label htmlFor="fullname" className="block mb-3 md:mb-4 text-[16px] md:text-[20px] leading-[100%] font-medium text-[#000000] text-end my-Poppins-tex">
+                                <div className="relative w-[170%] sm:w-[350px] md:w-[425px] mb-5 md:mb-7">
+                                    <label htmlFor="name" className="block mb-3 md:mb-4 text-[16px] md:text-[20px] leading-[100%] font-medium text-[#000000] text-end my-Poppins-tex">
                                         الإسم كامل
                                     </label>
                                     <FontAwesomeIcon
                                         icon={faUser}
-                                        className="absolute right-3 top-[52px] md:top-14 transform -translate-y-1/2 text-gray-400 pointer-events-none"
+                                        className="absolute right-3 top-[48px] md:top-14 transform -translate-y-1/2 text-gray-400 pointer-events-none"
                                     />
                                     <input
                                         type="text"
-                                        id="fullname"
+                                        id="name"
+                                        name="name"
                                         className="bg-gray-50 border focus:outline-none focus:border-[#00844B] border-gray-300 text-[#000000] text-sm my-Tajawal-text rounded-lg block w-full h-[40px] pr-10 pl-2.5 shadow-[inset_0px_2px_3.6px_#00000020]"
                                         placeholder="إدخل اسمك الكامل"
-                                        required
                                         dir="rtl"
+                                        onChange={formik.handleChange}
+                                        onBlur={formik.handleBlur}
+                                        value={formik.values.name}
                                     />
+                                    {formik.touched.name && formik.errors.name ? (
+                                        <div className="text-red-500 text-xs text-right mt-1">{formik.errors.name}</div>
+                                    ) : null}
                                 </div>
 
                                 {/* Email Field */}
-                                <div className="relative w-[90%] sm:w-[350px] md:w-[425px] mb-5 md:mb-7">
+                                <div className="relative w-[170%] sm:w-[350px] md:w-[425px] mb-5 md:mb-7">
                                     <label htmlFor="email" className="block mb-3 md:mb-4 text-[16px] md:text-[20px] leading-[100%] font-medium text-[#000000] text-end my-Poppins-tex">
                                         البريد الإلكتروني
                                     </label>
                                     <FontAwesomeIcon
                                         icon={faEnvelope}
-                                        className="absolute right-3 top-[52px] md:top-14 transform -translate-y-1/2 text-gray-400 pointer-events-none"
+                                        className="absolute right-3 top-[48px] md:top-14 transform -translate-y-1/2 text-gray-400 pointer-events-none"
                                     />
                                     <input
                                         type="email"
                                         id="email"
+                                        name="email"
                                         className="bg-gray-50 border focus:outline-none focus:border-[#00844B] border-gray-300 text-[#000000] text-sm my-Tajawal-text rounded-lg block w-full h-[40px] pr-10 pl-2.5 shadow-[inset_0px_2px_3.6px_#00000020]"
                                         placeholder="إدخل بريدك الإلكتروني"
-                                        required
                                         dir="rtl"
+                                        onChange={formik.handleChange}
+                                        onBlur={formik.handleBlur}
+                                        value={formik.values.email}
                                     />
+                                    {formik.touched.email && formik.errors.email ? (
+                                        <div className="text-red-500 text-xs text-right mt-1">{formik.errors.email}</div>
+                                    ) : null}
                                 </div>
 
                                 {/* Password Field */}
-                                <div className="relative w-[90%] sm:w-[350px] md:w-[425px] mb-5 md:mb-7">
+                                <div className="relative w-[170%] sm:w-[350px] md:w-[425px] mb-5 md:mb-7">
                                     <label htmlFor="password" className="block mb-3 md:mb-4 text-[16px] md:text-[20px] leading-[100%] font-medium text-[#000000] text-end my-Poppins-tex">
                                         كلمة المرور
                                     </label>
                                     <FontAwesomeIcon
                                         icon={faLock}
-                                        className="absolute right-3 top-[52px] md:top-14 transform -translate-y-1/2 text-gray-400 pointer-events-none"
+                                        className="absolute right-3 top-[48px] md:top-14 transform -translate-y-1/2 text-gray-400 pointer-events-none"
                                     />
                                     <input
                                         type={showPassword ? "text" : "password"}
                                         id="password"
+                                        name="password"
                                         className="bg-gray-50 border focus:outline-none focus:border-[#00844B] border-gray-300 text-[#000000] text-sm my-Tajawal-text rounded-lg block w-full h-[40px] pr-10 pl-10 shadow-[inset_0px_2px_3.6px_#00000020]"
                                         placeholder="ادخل كلمة المرور"
-                                        required
                                         dir="rtl"
+                                        onChange={formik.handleChange}
+                                        onBlur={formik.handleBlur}
+                                        value={formik.values.password}
                                     />
                                     <FontAwesomeIcon
                                         icon={showPassword ? faEye : faEyeSlash}
                                         onClick={togglePasswordVisibility}
-                                        className="absolute left-3 top-[52px] md:top-14 transform -translate-y-1/2 text-gray-400 cursor-pointer"
+                                        className="absolute left-3 top-[48px] md:top-14 transform -translate-y-1/2 text-gray-400 cursor-pointer"
                                     />
+                                    {formik.touched.password && formik.errors.password ? (
+                                        <div className="text-red-500 text-xs text-right mt-1">{formik.errors.password}</div>
+                                    ) : null}
                                 </div>
 
                                 {/* Confirm Password Field */}
-                                <div className="relative w-[90%] sm:w-[350px] md:w-[425px] mb-5 md:mb-7">
+                                <div className="relative w-[170%] sm:w-[350px] md:w-[425px] mb-5 md:mb-7">
                                     <label htmlFor="confirmPassword" className="block mb-3 md:mb-4 text-[16px] md:text-[20px] leading-[100%] font-medium text-[#000000] text-end my-Poppins-tex">
                                         تأكيد كلمة المرور
                                     </label>
                                     <FontAwesomeIcon
                                         icon={faLock}
-                                        className="absolute right-3 top-[52px] md:top-14 transform -translate-y-1/2 text-gray-400 pointer-events-none"
+                                        className="absolute right-3 top-[48px] md:top-14 transform -translate-y-1/2 text-gray-400 pointer-events-none"
                                     />
                                     <input
                                         type={showConfirmPassword ? "text" : "password"}
                                         id="confirmPassword"
+                                        name="confirmPassword"
                                         className="bg-gray-50 border focus:outline-none focus:border-[#00844B] border-gray-300 text-[#000000] text-sm my-Tajawal-text rounded-lg block w-full h-[40px] pr-10 pl-10 shadow-[inset_0px_2px_3.6px_#00000020]"
                                         placeholder="اعد إدخل كلمة المرور"
-                                        required
                                         dir="rtl"
+                                        onChange={formik.handleChange}
+                                        onBlur={formik.handleBlur}
+                                        value={formik.values.confirmPassword}
                                     />
                                     <FontAwesomeIcon
                                         icon={showConfirmPassword ? faEye : faEyeSlash}
                                         onClick={toggleConfirmPasswordVisibility}
-                                        className="absolute left-3 top-[52px] md:top-14 transform -translate-y-1/2 text-gray-400 cursor-pointer"
+                                        className="absolute left-3 top-[48px] md:top-14 transform -translate-y-1/2 text-gray-400 cursor-pointer"
                                     />
+                                    {formik.touched.confirmPassword && formik.errors.confirmPassword ? (
+                                        <div className="text-red-500 text-xs text-right mt-1">{formik.errors.confirmPassword}</div>
+                                    ) : null}
                                 </div>
 
                                 {/* Terms & Conditions */}
-                                <div className="w-[90%] sm:w-[350px] md:w-[425px] mb-5 md:mb-6 flex items-center justify-end">
+                                <div className="w-[170%] sm:w-[350px] md:w-[425px] mb-5 md:mb-6 flex items-center justify-end">
                                     <label className="ml-3 text-[10px] md:text-[12px] text-[#00844B] leading-[100%] font-bold my-Poppins-text cursor-pointer flex items-center">
                                         الشروط و الاحكام  <span className='text-[#8A8A8A] font-normal ms-1'>أوافق علي</span>
                                         <input
@@ -156,9 +239,11 @@ export default function Register() {
 
                                 <button
                                     type="submit"
-                                    className="cursor-pointer w-[90%] sm:w-[350px] md:w-[425px] h-[40px] bg-[#00844B] text-white text-[12px] my-Poppins-text rounded-sm hover:bg-[#006C3C] transition duration-300 mb-4 md:mb-0"
+                                    disabled={isSubmitting}
+                                    className="cursor-pointer w-[170%] sm:w-[350px] md:w-[425px] h-[40px] bg-[#00844B] text-white text-[12px] my-Poppins-text rounded-sm hover:bg-[#006C3C] transition duration-300 mb-4 md:mb-0 disabled:bg-gray-400 disabled:cursor-not-allowed"
                                 >
-                                    إنشاء الحساب <FontAwesomeIcon icon={faUserPlus} className="text-white text-[12px] ms-2" />
+                                    {isSubmitting ? 'جاري التسجيل...' : 'إنشاء الحساب'}
+                                    {!isSubmitting && <FontAwesomeIcon icon={faUserPlus} className="text-white text-[12px] ms-2" />}
                                 </button>
                             </form>
                             <div className='text-[12px] md:text-[14px] my-Tajawal-text leading-[100%] mt-4 md:mt-5'>لديك حساب بالفعل؟ <Link to={'/login'} className='text-[#00844B]'>تسجيل الدخول</Link></div>

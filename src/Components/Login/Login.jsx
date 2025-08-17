@@ -1,17 +1,74 @@
-import React, { useState } from 'react';
+import React, { useContext, useState } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faUser, faEnvelope, faLock, faEye, faEyeSlash, faUserPlus } from '@fortawesome/free-solid-svg-icons';
-import { Link } from 'react-router-dom';
+import { faEnvelope, faLock, faEye, faEyeSlash, faUserPlus } from '@fortawesome/free-solid-svg-icons';
+import { Link, useNavigate } from 'react-router-dom';
+import { useFormik } from 'formik';
+import * as Yup from 'yup';
+import { userContext } from '../Context/userContext';
 
 export default function Login() {
     const [showPassword, setShowPassword] = useState(false);
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [loginError, setLoginError] = useState(null);
+    const [loginSuccess, setLoginSuccess] = useState(false);
+    let { setUserToken } = useContext(userContext);
+    let navigate = useNavigate();
 
     const togglePasswordVisibility = () => setShowPassword(!showPassword);
 
-    const handleSubmit = (e) => {
-        e.preventDefault();
-        alert("تم إنشاء الحساب بنجاح");
-    };
+    const validationSchema = Yup.object({
+        email: Yup.string()
+            .email('البريد الإلكتروني غير صحيح')
+            .required('البريد الإلكتروني مطلوب'),
+        password: Yup.string()
+            .required('كلمة المرور مطلوبة')
+    });
+
+    async function login(values, { setSubmitting }) {
+        setIsSubmitting(true);
+        setLoginError(null);
+
+        try {
+            // Replace this with your actual login API endpoint
+            const response = await fetch('https://newsyriabackend-production.up.railway.app/api/v1/login', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    email: values.email,
+                    password: values.password
+                })
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(data.message || 'حدث خطأ أثناء تسجيل الدخول');
+            }
+
+            setLoginSuccess(true);
+
+            navigate('/');
+            setUserToken(data.token);
+            localStorage.setItem('userToken', data.token);
+
+        } catch (error) {
+            setLoginError(error.message || 'حدث خطأ أثناء تسجيل الدخول. يرجى المحاولة مرة أخرى.');
+        } finally {
+            setIsSubmitting(false);
+            setSubmitting(false);
+        }
+    }
+
+    const formik = useFormik({
+        initialValues: {
+            email: "",
+            password: ""
+        },
+        validationSchema,
+        onSubmit: login
+    });
 
     return (
         <div className='[background:linear-gradient(to_bottom_right,_#004025_0%,_#FFFFFFCC_80%,_transparent_100%)] min-h-[150vh] flex justify-center items-center py-10 md:py-0'>
@@ -37,7 +94,22 @@ export default function Login() {
                             املأ البيانات التالية للدخول
                         </p>
 
-                        <form className='mt-6 sm:mt-8 md:mt-10 w-full flex flex-col items-center' onSubmit={handleSubmit}>
+                        {loginSuccess && (
+                            <div className="mt-4 p-3 bg-green-100 text-green-700 rounded text-sm">
+                                تم تسجيل الدخول بنجاح!
+                            </div>
+                        )}
+
+                        {loginError && (
+                            <div className="mt-4 p-3 bg-red-100 text-red-700 rounded text-sm">
+                                {loginError}
+                            </div>
+                        )}
+
+                        <form
+                            className='mt-6 sm:mt-8 md:mt-10 w-full flex flex-col items-center'
+                            onSubmit={formik.handleSubmit}
+                        >
                             {/* Email Field */}
                             <div className='relative w-full sm:w-[350px] md:w-[425px] mb-4 sm:mb-6'>
                                 <label htmlFor="email" className='block mb-2 sm:mb-3 text-[15px] sm:text-[16px] md:text-[20px] text-[#000000] text-end my-Poppins-text'>
@@ -50,11 +122,17 @@ export default function Login() {
                                 <input
                                     type="email"
                                     id="email"
+                                    name="email"
                                     placeholder="إدخل بريدك الإلكتروني"
-                                    required
                                     dir="rtl"
                                     className='bg-gray-50 border border-gray-300 focus:outline-none focus:border-[#00844B] text-[#000000] text-sm rounded-lg block w-full h-[40px] pr-10 pl-2.5 shadow-[inset_0px_2px_3.6px_#00000020]'
+                                    onChange={formik.handleChange}
+                                    onBlur={formik.handleBlur}
+                                    value={formik.values.email}
                                 />
+                                {formik.touched.email && formik.errors.email ? (
+                                    <div className="text-red-500 text-xs text-right mt-1">{formik.errors.email}</div>
+                                ) : null}
                             </div>
 
                             {/* Password Field */}
@@ -69,16 +147,22 @@ export default function Login() {
                                 <input
                                     type={showPassword ? 'text' : 'password'}
                                     id="password"
+                                    name="password"
                                     placeholder="ادخل كلمة المرور"
-                                    required
                                     dir="rtl"
                                     className='bg-gray-50 border border-gray-300 focus:outline-none focus:border-[#00844B] text-[#000000] text-sm rounded-lg block w-full h-[40px] pr-10 pl-10 shadow-[inset_0px_2px_3.6px_#00000020]'
+                                    onChange={formik.handleChange}
+                                    onBlur={formik.handleBlur}
+                                    value={formik.values.password}
                                 />
                                 <FontAwesomeIcon
                                     icon={showPassword ? faEye : faEyeSlash}
                                     onClick={togglePasswordVisibility}
                                     className='absolute left-3 top-[52px] sm:top-[50px] md:top-16 transform -translate-y-1/2 text-gray-400 cursor-pointer'
                                 />
+                                {formik.touched.password && formik.errors.password ? (
+                                    <div className="text-red-500 text-xs text-right mt-1">{formik.errors.password}</div>
+                                ) : null}
                             </div>
 
                             {/* Forgot Password */}
@@ -89,9 +173,11 @@ export default function Login() {
                             {/* Submit Button */}
                             <button
                                 type="submit"
-                                className='w-full sm:w-[350px] md:w-[425px] h-[40px] bg-[#00844B] text-white text-[12px] rounded-sm hover:bg-[#006C3C] transition duration-300 mb-4'
+                                disabled={isSubmitting}
+                                className='w-full sm:w-[350px] md:w-[425px] h-[40px] bg-[#00844B] text-white text-[12px] rounded-sm hover:bg-[#006C3C] transition duration-300 mb-4 disabled:bg-gray-400 disabled:cursor-not-allowed'
                             >
-                                تسجيل الدخول <FontAwesomeIcon icon={faUserPlus} className="text-white text-[12px] ms-2" />
+                                {isSubmitting ? 'جاري تسجيل الدخول...' : 'تسجيل الدخول'}
+                                {!isSubmitting && <FontAwesomeIcon icon={faUserPlus} className="text-white text-[12px] ms-2" />}
                             </button>
                         </form>
 
