@@ -24,7 +24,7 @@ export default function Navbar() {
                 <div className="flex flex-wrap items-center justify-between w-full md:py-2">
                     {/* Logo */}
                     <Link to={'/'} className="flex items-center space-x-3 rtl:space-x-reverse">
-                        <span className="my-ruwudu-text font-semibold text-[24px] sm:text-[28px] leading-[100%] text-[#000000]">
+                        <span className="my-ruwudu-text font-semibold text-[24px] mt-2 sm:text-[28px] leading-[100%] text-[#000000]">
                             أخبار سوريا
                         </span>
                     </Link>
@@ -74,7 +74,7 @@ export default function Navbar() {
                     </div>
 
                     {/* Desktop Menu */}
-                    <div className="hidden md:flex md:w-auto md:order-1">
+                    <div className="hidden md:flex md:w-auto md:order-1 lg:mt-2">
                         <ul className="flex flex-col md:flex-row md:space-x-8 rtl:space-x-reverse mt-4 md:mt-0 p-4 md:p-0 font-medium rounded-lg">
                             <li>
                                 <Link
