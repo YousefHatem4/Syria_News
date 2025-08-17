@@ -3,6 +3,7 @@ import style from './Register.module.css';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faUser, faEnvelope, faLock, faEye, faEyeSlash, faUserPlus } from '@fortawesome/free-solid-svg-icons';
 import { Link } from 'react-router-dom';
+import { useFormik } from 'formik';
 
 export default function Register() {
     const [showPassword, setShowPassword] = useState(false);
@@ -30,6 +31,18 @@ export default function Register() {
         // Handle form submission logic here
         alert("تم إنشاء الحساب بنجاح");
     };
+
+    async function register(data) {
+
+    }
+
+    const formik = useFormik({
+        initialValues: {
+            name: "",
+            email: "",
+            password: ""
+        }, onSubmit: register
+    })
 
     return (
         <>

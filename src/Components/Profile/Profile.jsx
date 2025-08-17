@@ -2,17 +2,19 @@ import React, { useState } from 'react'
 import style from './Profile.module.css'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faUser as faUserRegular, faAddressCard } from '@fortawesome/free-regular-svg-icons';
-import { faCamera, faUser as faUserSolid, faLock, faChartLine, faBars, faTimes } from '@fortawesome/free-solid-svg-icons';
+import { faCamera, faUser as faUserSolid, faLock, faChartLine, faBars, faTimes, faRectangleList } from '@fortawesome/free-solid-svg-icons';
 import UserInfo from './UserInfo';
 import ChangePass from './ChangePass';
 import UserPosts from './UserPosts';
 import Statistics from './Statistics';
+import LastPosts from './LastPosts';
 
 export default function Profile() {
     const [info, setInfo] = useState(true);
     const [changePass, setChangePass] = useState(false);
     const [posts, setPosts] = useState(false);
     const [statistics, setStatistics] = useState(false);
+    const [lastPosts, setLastPosts] = useState(false);
     const [showMobileMenu, setShowMobileMenu] = useState(false);
 
     return <>
@@ -64,6 +66,7 @@ export default function Profile() {
                                     setChangePass(false);
                                     setPosts(false);
                                     setStatistics(false);
+                                    setLastPosts(false);
                                     setShowMobileMenu(false);
                                 }}
                                 className={`text-right font-[Cairo] text-base not-italic font-normal leading-[27.2px] flex cursor-pointer items-center gap-2 w-full justify-end p-3 rounded ${info ? 'text-[#E9C882] bg-[rgba(233,200,130,0.10)]' : 'text-white'}`}
@@ -79,6 +82,7 @@ export default function Profile() {
                                     setPosts(false);
                                     setStatistics(false);
                                     setShowMobileMenu(false);
+                                    setLastPosts(false);
                                 }}
                                 className={`text-right font-[Cairo] text-base not-italic font-normal leading-[27.2px] flex  cursor-pointer items-center gap-2 w-full justify-end p-3 rounded ${changePass ? 'text-[#E9C882] bg-[rgba(233,200,130,0.10)]' : 'text-white'}`}
                             >
@@ -90,6 +94,7 @@ export default function Profile() {
                                 onClick={() => {
                                     setInfo(false);
                                     setChangePass(false);
+                                    setLastPosts(false);
                                     setPosts(true);
                                     setStatistics(false);
                                     setShowMobileMenu(false);
@@ -106,12 +111,28 @@ export default function Profile() {
                                     setChangePass(false);
                                     setPosts(false);
                                     setStatistics(true);
+                                    setLastPosts(false);
                                     setShowMobileMenu(false);
                                 }}
                                 className={`text-right font-[Cairo] text-base not-italic font-normal leading-[27.2px] flex   cursor-pointer items-center gap-2 w-full justify-end p-3 rounded ${statistics ? 'text-[#E9C882] bg-[rgba(233,200,130,0.10)]' : 'text-white'}`}
                             >
                                 <h1>الإحصائيات</h1>
                                 <FontAwesomeIcon icon={faChartLine} />
+                            </div>
+
+                            <div
+                                onClick={() => {
+                                    setInfo(false);
+                                    setChangePass(false);
+                                    setPosts(false);
+                                    setStatistics(false);
+                                    setLastPosts(true);
+                                    setShowMobileMenu(false);
+                                }}
+                                className={`text-right font-[Cairo] text-base not-italic font-normal leading-[27.2px] flex cursor-pointer items-center gap-2 w-full justify-end p-3 rounded ${lastPosts ? 'text-[#E9C882] bg-[rgba(233,200,130,0.10)]' : 'text-white'}`}
+                            >
+                                <h1>آخر المنشورات</h1>
+                                <FontAwesomeIcon icon={faRectangleList} />
                             </div>
                         </div>
                     </div>
@@ -122,6 +143,7 @@ export default function Profile() {
                     {changePass && <ChangePass />}
                     {posts && <UserPosts />}
                     {statistics && <Statistics />}
+                    {lastPosts && <LastPosts />}
                 </div>
 
                 {/* sidebar - desktop */}
@@ -149,6 +171,7 @@ export default function Profile() {
                                     setChangePass(false);
                                     setPosts(false);
                                     setStatistics(false);
+                                    setLastPosts(false);
                                 }}
                                 className='text-white cursor-pointer text-right font-[Cairo] text-[14px] lg:text-base not-italic font-normal leading-[27.2px] flex items-center gap-2 me-1'
                             >
@@ -172,6 +195,7 @@ export default function Profile() {
                                     setChangePass(true);
                                     setPosts(false);
                                     setStatistics(false);
+                                    setLastPosts(false);
                                 }}
                                 className='text-white cursor-pointer text-right me-1 font-[Cairo] text-[14px] lg:text-base not-italic font-normal leading-[27.2px] flex items-center gap-2'
                             >
@@ -195,6 +219,7 @@ export default function Profile() {
                                     setChangePass(false);
                                     setPosts(true);
                                     setStatistics(false);
+                                    setLastPosts(false);
                                 }}
                                 className='text-white cursor-pointer text-right me-1 font-[Cairo] text-[14px] lg:text-base not-italic font-normal leading-[27.2px] flex items-center gap-2'
                             >
@@ -217,6 +242,7 @@ export default function Profile() {
                                     setInfo(false);
                                     setChangePass(false);
                                     setPosts(false);
+                                    setLastPosts(false);
                                     setStatistics(true);
                                 }}
                                 className='text-white cursor-pointer text-right me-1 font-[Cairo] text-[14px] lg:text-base not-italic font-normal leading-[27.2px] flex items-center gap-2'
@@ -225,10 +251,33 @@ export default function Profile() {
                                 <FontAwesomeIcon icon={faChartLine} />
                             </div>
                         )}
+
+                        {/* item 5 */}
+                        {lastPosts ? (
+                            <div className='flex pl-[120px] lg:pl-[130px] pr-[10px] lg:pr-[12.79px] pt-[10px] lg:pt-[11.79px] pb-[10px] lg:pb-[12.8px] items-center gap-[10px] lg:gap-[12.8px] self-stretch rounded-[5px] bg-[rgba(233,200,130,0.10)] shadow-[0_4px_4px_rgba(0,0,0,0.25)]'>
+                                <div className='text-[#E9C882] whitespace-nowrap text-right font-[Cairo] text-[14px] lg:text-base not-italic font-normal leading-[27.2px] flex items-center gap-2 -me-2'>
+                                    <h1 className='inline'>آخر المنشورات</h1>
+                                    <FontAwesomeIcon icon={faRectangleList} />
+                                </div>
+                            </div>
+                        ) : (
+                            <div
+                                onClick={() => {
+                                    setInfo(false);
+                                    setChangePass(false);
+                                    setPosts(false);
+                                    setStatistics(false);
+                                    setLastPosts(true);
+                                }}
+                                className='text-white cursor-pointer text-right me-1 font-[Cairo] text-[14px] lg:text-base not-italic font-normal leading-[27.2px] flex items-center gap-2'
+                            >
+                                <h1>آخر المنشورات</h1>
+                                <FontAwesomeIcon icon={faRectangleList} />
+                            </div>
+                        )}
+
                     </div>
                 </div>
-
-               
             </section>
         </section>
     </>
