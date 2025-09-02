@@ -17,6 +17,7 @@ import Profile from './Components/Profile/Profile'
 import VerfiyCode from './Components/VerfiyCode/VerfiyCode'
 import UserContextProvider from './Components/Context/userContext'
 import { Toaster } from 'react-hot-toast'
+import MoreNews from './Components/MoreNews/MoreNews'
 
 
 
@@ -37,6 +38,7 @@ const routers = createBrowserRouter([
       { path: "newsdetails", element: <NewsDetails /> },
       { path: "profile", element: <Profile /> },
       { path: "verfiycode", element: <VerfiyCode /> },
+      { path: "more-news", element: <MoreNews /> },
 
     ]
   }
