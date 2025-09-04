@@ -1,10 +1,12 @@
-import React, { useState } from 'react';
+import React, { useContext, useState } from 'react';
 import style from './Register.module.css';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faUser, faEnvelope, faLock, faEye, faEyeSlash, faUserPlus } from '@fortawesome/free-solid-svg-icons';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useFormik } from 'formik';
 import * as Yup from 'yup';
+import axios from 'axios';
+import { userContext } from '../Context/userContext';
 
 export default function Register() {
     const [showPassword, setShowPassword] = useState(false);
@@ -13,6 +15,8 @@ export default function Register() {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [registrationError, setRegistrationError] = useState(null);
     const [registrationSuccess, setRegistrationSuccess] = useState(false);
+    let navigate = useNavigate();
+    let { setUserToken } = useContext(userContext)
 
     const togglePasswordVisibility = () => {
         setShowPassword(!showPassword);
@@ -52,42 +56,22 @@ export default function Register() {
         setRegistrationError(null);
 
         try {
-            const response = await fetch('https://newsyriabackend-production.up.railway.app/api/v1/registration', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    name: values.name,
-                    email: values.email,
-                    password: values.password
-                })
-            });
-
-            const data = await response.json();
-
-            if (!response.ok) {
-                throw new Error(data.message || 'حدث خطأ أثناء التسجيل');
-            }
-
-            setRegistrationSuccess(true);
-            resetForm();
+            let { data } = await axios.post(`https://newsyriabackend-production.up.railway.app/auth/register`, values);
+            setTimeout(() => {
+                navigate('/login')
+            }, 2000);
         } catch (error) {
-            setRegistrationError(error.message || 'حدث خطأ أثناء التسجيل. يرجى المحاولة مرة أخرى.');
-        } finally {
-            setIsSubmitting(false);
-            setSubmitting(false);
+            console.log(error);
         }
     }
 
     const formik = useFormik({
         initialValues: {
-            name: "",
-            email: "",
+            userName: "",
             password: "",
-            confirmPassword: ""
+            email: "",
         },
-        validationSchema,
+
         onSubmit: register
     });
 
@@ -116,7 +100,7 @@ export default function Register() {
                             <form className='mt-8 md:mt-15 flex flex-col items-center' onSubmit={formik.handleSubmit}>
                                 {/* Full Name Field */}
                                 <div className="relative w-[170%] sm:w-[350px] md:w-[425px] mb-5 md:mb-7">
-                                    <label htmlFor="name" className="block mb-3 md:mb-4 text-[16px] md:text-[20px] leading-[100%] font-medium text-[#000000] text-end my-Poppins-tex">
+                                    <label htmlFor="userName" className="block mb-3 md:mb-4 text-[16px] md:text-[20px] leading-[100%] font-medium text-[#000000] text-end my-Poppins-tex">
                                         الإسم كامل
                                     </label>
                                     <FontAwesomeIcon
@@ -125,23 +109,23 @@ export default function Register() {
                                     />
                                     <input
                                         type="text"
-                                        id="name"
-                                        name="name"
+                                        id="userName"
+                                        name="userName"
                                         className="bg-gray-50 border focus:outline-none focus:border-[#00844B] border-gray-300 text-[#000000] text-sm my-Tajawal-text rounded-lg block w-full h-[40px] pr-10 pl-2.5 shadow-[inset_0px_2px_3.6px_#00000020]"
                                         placeholder="إدخل اسمك الكامل"
                                         dir="rtl"
                                         onChange={formik.handleChange}
                                         onBlur={formik.handleBlur}
-                                        value={formik.values.name}
+                                        value={formik.values.userName}
                                     />
-                                    {formik.touched.name && formik.errors.name ? (
-                                        <div className="text-red-500 text-xs text-right mt-1">{formik.errors.name}</div>
+                                    {formik.touched.userName && formik.errors.userName ? (
+                                        <div className="text-red-500 text-xs text-right mt-1">{formik.errors.userName}</div>
                                     ) : null}
                                 </div>
 
                                 {/* Email Field */}
                                 <div className="relative w-[170%] sm:w-[350px] md:w-[425px] mb-5 md:mb-7">
-                                    <label htmlFor="email" className="block mb-3 md:mb-4 text-[16px] md:text-[20px] leading-[100%] font-medium text-[#000000] text-end my-Poppins-tex">
+                                    <label htmlFor="register-email" className="block mb-3 md:mb-4 text-[16px] md:text-[20px] leading-[100%] font-medium text-[#000000] text-end my-Poppins-tex">
                                         البريد الإلكتروني
                                     </label>
                                     <FontAwesomeIcon
@@ -150,8 +134,9 @@ export default function Register() {
                                     />
                                     <input
                                         type="email"
-                                        id="email"
+                                        id="register-email"
                                         name="email"
+                                        autoComplete='username'
                                         className="bg-gray-50 border focus:outline-none focus:border-[#00844B] border-gray-300 text-[#000000] text-sm my-Tajawal-text rounded-lg block w-full h-[40px] pr-10 pl-2.5 shadow-[inset_0px_2px_3.6px_#00000020]"
                                         placeholder="إدخل بريدك الإلكتروني"
                                         dir="rtl"
@@ -180,6 +165,7 @@ export default function Register() {
                                         className="bg-gray-50 border focus:outline-none focus:border-[#00844B] border-gray-300 text-[#000000] text-sm my-Tajawal-text rounded-lg block w-full h-[40px] pr-10 pl-10 shadow-[inset_0px_2px_3.6px_#00000020]"
                                         placeholder="ادخل كلمة المرور"
                                         dir="rtl"
+                                        autoComplete='new-password'
                                         onChange={formik.handleChange}
                                         onBlur={formik.handleBlur}
                                         value={formik.values.password}
@@ -207,12 +193,11 @@ export default function Register() {
                                         type={showConfirmPassword ? "text" : "password"}
                                         id="confirmPassword"
                                         name="confirmPassword"
+                                        autoComplete='new-password'
                                         className="bg-gray-50 border focus:outline-none focus:border-[#00844B] border-gray-300 text-[#000000] text-sm my-Tajawal-text rounded-lg block w-full h-[40px] pr-10 pl-10 shadow-[inset_0px_2px_3.6px_#00000020]"
                                         placeholder="اعد إدخل كلمة المرور"
                                         dir="rtl"
-                                        onChange={formik.handleChange}
-                                        onBlur={formik.handleBlur}
-                                        value={formik.values.confirmPassword}
+
                                     />
                                     <FontAwesomeIcon
                                         icon={showConfirmPassword ? faEye : faEyeSlash}

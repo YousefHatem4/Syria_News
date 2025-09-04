@@ -4,6 +4,7 @@ import { faEnvelope, faLock, faEye, faEyeSlash, faUserPlus } from '@fortawesome/
 import { Link, useNavigate } from 'react-router-dom';
 import { useFormik } from 'formik';
 import * as Yup from 'yup';
+import axios from 'axios';
 import { userContext } from '../Context/userContext';
 
 export default function Login() {
@@ -29,32 +30,21 @@ export default function Login() {
         setLoginError(null);
 
         try {
-            // Replace this with your actual login API endpoint
-            const response = await fetch('https://newsyriabackend-production.up.railway.app/api/v1/login', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    email: values.email,
-                    password: values.password
-                })
-            });
-
-            const data = await response.json();
-
-            if (!response.ok) {
-                throw new Error(data.message || 'حدث خطأ أثناء تسجيل الدخول');
-            }
+            let { data } = await axios.post(
+                `https://newsyriabackend-production.up.railway.app/api/v1/login`,
+                values
+            );
 
             setLoginSuccess(true);
-
-            navigate('/');
             setUserToken(data.token);
             localStorage.setItem('userToken', data.token);
 
+            setTimeout(() => {
+                navigate('/');
+            }, 2000);
+
         } catch (error) {
-            setLoginError(error.message || 'حدث خطأ أثناء تسجيل الدخول. يرجى المحاولة مرة أخرى.');
+            setLoginError(error.response?.data?.message || 'حدث خطأ أثناء تسجيل الدخول. يرجى المحاولة مرة أخرى.');
         } finally {
             setIsSubmitting(false);
             setSubmitting(false);
@@ -112,7 +102,7 @@ export default function Login() {
                         >
                             {/* Email Field */}
                             <div className='relative w-full sm:w-[350px] md:w-[425px] mb-4 sm:mb-6'>
-                                <label htmlFor="email" className='block mb-2 sm:mb-3 text-[15px] sm:text-[16px] md:text-[20px] text-[#000000] text-end my-Poppins-text'>
+                                <label htmlFor="login-email" className='block mb-2 sm:mb-3 text-[15px] sm:text-[16px] md:text-[20px] text-[#000000] text-end my-Poppins-text'>
                                     البريد الإلكتروني
                                 </label>
                                 <FontAwesomeIcon
@@ -121,8 +111,9 @@ export default function Login() {
                                 />
                                 <input
                                     type="email"
-                                    id="email"
+                                    id="login-email"
                                     name="email"
+                                    autoComplete="username"
                                     placeholder="إدخل بريدك الإلكتروني"
                                     dir="rtl"
                                     className='bg-gray-50 border border-gray-300 focus:outline-none focus:border-[#00844B] text-[#000000] text-sm rounded-lg block w-full h-[40px] pr-10 pl-2.5 shadow-[inset_0px_2px_3.6px_#00000020]'
@@ -148,6 +139,7 @@ export default function Login() {
                                     type={showPassword ? 'text' : 'password'}
                                     id="password"
                                     name="password"
+                                    autoComplete="current-password"
                                     placeholder="ادخل كلمة المرور"
                                     dir="rtl"
                                     className='bg-gray-50 border border-gray-300 focus:outline-none focus:border-[#00844B] text-[#000000] text-sm rounded-lg block w-full h-[40px] pr-10 pl-10 shadow-[inset_0px_2px_3.6px_#00000020]'
