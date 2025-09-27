@@ -31,7 +31,7 @@ export default function Login() {
 
         try {
             let { data } = await axios.post(
-                `https://newsyriabackend-production.up.railway.app/auth/login`,
+                `https://newssyriabackend-newsyria.up.railway.app/auth/login`,
                 values
             );
 

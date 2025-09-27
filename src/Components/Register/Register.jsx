@@ -56,7 +56,7 @@ export default function Register() {
         setRegistrationError(null);
 
         try {
-            let { data } = await axios.post(`https://newsyriabackend-production.up.railway.app/auth/register`, values);
+            let { data } = await axios.post(`https://newssyriabackend-newsyria.up.railway.app/auth/register`, values);
             setTimeout(() => {
                 navigate('/login')
             }, 2000);
