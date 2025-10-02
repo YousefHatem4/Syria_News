@@ -185,7 +185,7 @@ export default function Home() {
     };
 
     return (
-        <div className='bg-[linear-gradient(164deg,#004025_-0.36%,rgba(255,255,255,0.80)_34.44%,rgba(0,64,37,0.50)_101.6%)] min-h-[315vh]'>
+        <div className='bg-[linear-gradient(164deg,#004025_-0.36%,rgba(255,255,255,0.80)_34.44%,rgba(0,64,37,0.50)_101.6%)] h-auto pb-25'>
 
             {/* add post section - Added hover animation */}
             <section className='flex justify-center items-center pt-30 md:pt-50 px-4'>
