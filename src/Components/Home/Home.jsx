@@ -197,7 +197,7 @@ export default function Home() {
             const response = await axios.post(`${BASE_URL}articles`, formData, {
                 headers: {
                     'Authorization': `Bearer ${userToken}`,
-                    'Content-Type': 'multipart/form-data'
+                    // 'Content-Type': 'multipart/form-data'
                 }
             });
 
