@@ -180,14 +180,17 @@ export default function Home() {
             const formData = new FormData();
 
             // Create the dto object according to API schema
-            const articleDto = {
-                header: articleTitle,
-                bio: articleBio,
-                categoryName: selectedCategory
-            };
+            // const articleDto = {
+            //     header: articleTitle,
+            //     bio: articleBio,
+            //     categoryName: selectedCategory
+            // };
 
             // Append the dto as JSON string
-            formData.append('dto', JSON.stringify(articleDto));
+            // formData.append('dto', JSON.stringify(articleDto));
+            formData.append('header', articleTitle);
+            formData.append('bio', articleBio);
+            formData.append('categoryName', selectedCategory);
 
             // Append the cover image file
             if (coverImage) {
