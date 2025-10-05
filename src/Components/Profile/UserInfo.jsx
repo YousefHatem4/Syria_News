@@ -14,13 +14,13 @@ export default function UserInfo() {
                 {/* first input */}
                 <div className='flex flex-col items-end gap-2 w-full'>
                     <label htmlFor="text" className="text-[#E9C882] font-[Cairo] text-sm md:text-base not-italic font-normal leading-[27.2px]">الاسم الكامل</label>
-                    <input type="text" id="text" className="text-white flex w-full md:w-[738px] py-3 md:py-[13.8px] px-3 md:px-[17px] justify-center items-start rounded-[5px] border border-[rgba(233,200,130,0.20)] bg-[rgba(255,255,255,0.05)] text-right font-[Cairo] text-sm md:text-base not-italic font-normal leading-normal" defaultValue="أحمد محمد" />
+                    <input type="text" readOnly id="text" className="text-white flex w-full md:w-[738px] py-3 md:py-[13.8px] px-3 md:px-[17px] justify-center items-start rounded-[5px] border border-[rgba(233,200,130,0.20)] bg-[rgba(255,255,255,0.05)] text-right font-[Cairo] text-sm md:text-base not-italic font-normal leading-normal" defaultValue="أحمد محمد" />
                 </div>
 
                 {/* second input */}
                 <div className='flex flex-col items-end gap-2 mt-4 md:mt-6 w-full'>
                     <label htmlFor="email" className="text-[#E9C882] font-[Cairo] text-sm md:text-base not-italic font-normal leading-[27.2px]">البريد الإلكتروني</label>
-                    <input type="email" id="email" className="text-white flex w-full md:w-[738px] py-3 md:py-[13.8px] px-3 md:px-[17px] justify-center items-start rounded-[5px] border border-[rgba(233,200,130,0.20)] bg-[rgba(255,255,255,0.05)] text-right font-[Cairo] text-sm md:text-base not-italic font-normal leading-normal" defaultValue="ahmed@example.com" />
+                    <input type="email" readOnly id="email" className="text-white flex w-full md:w-[738px] py-3 md:py-[13.8px] px-3 md:px-[17px] justify-center items-start rounded-[5px] border border-[rgba(233,200,130,0.20)] bg-[rgba(255,255,255,0.05)] text-right font-[Cairo] text-sm md:text-base not-italic font-normal leading-normal" placeholder="ahmed@example.com" />
                 </div>
 
                 {/* third input */}

@@ -6,6 +6,7 @@ import { useFormik } from 'formik';
 import * as Yup from 'yup';
 import axios from 'axios';
 import { userContext } from '../Context/userContext';
+import { BASE_URL } from '../../App'
 
 export default function Login() {
     const [showPassword, setShowPassword] = useState(false);
@@ -31,7 +32,7 @@ export default function Login() {
 
         try {
             let { data } = await axios.post(
-                `https://newssyriabackend-newsyria.up.railway.app/auth/login`,
+                `${BASE_URL}auth/login`,
                 values
             );
 

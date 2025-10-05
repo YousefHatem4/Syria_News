@@ -7,6 +7,7 @@ import { useFormik } from 'formik';
 import * as Yup from 'yup';
 import axios from 'axios';
 import { userContext } from '../Context/userContext';
+import { BASE_URL } from '../../App'
 
 export default function Register() {
     const [showPassword, setShowPassword] = useState(false);
@@ -56,7 +57,7 @@ export default function Register() {
         setRegistrationError(null);
 
         try {
-            let { data } = await axios.post(`https://newssyriabackend-newsyria.up.railway.app/auth/register`, values);
+            let { data } = await axios.post(`${BASE_URL}auth/register`, values);
             setTimeout(() => {
                 navigate('/login')
             }, 2000);

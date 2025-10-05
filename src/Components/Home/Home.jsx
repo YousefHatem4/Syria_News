@@ -1,20 +1,27 @@
-import React, { useEffect, useState, useRef } from 'react'
+import React, { useEffect, useState, useRef, useContext } from 'react'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faFire, faCirclePlus, faSquarePollVertical, faCamera, faVideo, faCheckCircle, faTimes, faClock, faAngleLeft, faAngleRight, faLandmark, faGavel, faFutbol, faMasksTheater, faCheck, faPlus, faPen, faBars } from '@fortawesome/free-solid-svg-icons';
 import { faNewspaper, faUser, faCalendar, faClock as faclock } from '@fortawesome/free-regular-svg-icons';
 import { Link } from 'react-router-dom';
 import "slick-carousel/slick/slick.css";
 import "slick-carousel/slick/slick-theme.css";
+import axios from 'axios';
+import { userContext } from '../Context/userContext';
+import { BASE_URL } from '../../App'
 
 export default function Home() {
     const [showSection2, setShowSection2] = useState(false);
     const [showToast, setShowToast] = useState(false);
     const [currentStep, setCurrentStep] = useState(1);
-    const [selectedCategory, setSelectedCategory] = useState('politics');
+    const [selectedCategory, setSelectedCategory] = useState('');
     const [articleTitle, setArticleTitle] = useState('');
+    const [articleBio, setArticleBio] = useState(''); // NEW BIO STATE
     const [coverImage, setCoverImage] = useState(null);
     const [imagePreview, setImagePreview] = useState(null);
+    const [categories, setCategories] = useState([]);
+    const [isLoading, setIsLoading] = useState(false);
     const modalRef = useRef(null);
+    let { userToken } = useContext(userContext);
 
     // New state for article sections
     const [articleSections, setArticleSections] = useState([
@@ -39,13 +46,28 @@ export default function Home() {
         { id: 8, image: "morepost-3.png", title: "اشترك في النشرة الإخبارية", content: "أخبار وتحليلات خبراء لكل جدول. احصل على إصدارات الصباح والمساء من نشرتنا الإخبارية الرئيسية في بريدك الإلكتروني" }
     ];
 
-    // Categories data
-    const categories = [
-        { id: 'arts', name: 'الفنون', icon: faMasksTheater },
-        { id: 'sports', name: 'الرياضة', icon: faFutbol },
-        { id: 'economy', name: 'الاقتصاد', icon: faGavel },
-        { id: 'politics', name: 'السياسة', icon: faLandmark },
-    ];
+    // Fetch categories from API
+    const fetchCategories = async () => {
+        try {
+            const response = await axios.get(`${BASE_URL}categories`);
+            if (response.data && Array.isArray(response.data)) {
+                setCategories(response.data);
+                // Set default selected category to first category if available
+                if (response.data.length > 0) {
+                    setSelectedCategory(response.data[0].name);
+                }
+            }
+        } catch (error) {
+            console.error('Error fetching categories:', error);
+            // Fallback to default categories if API fails
+            setCategories([
+                { name: 'الفنون', nameAr: 'الفنون', description: 'Arts', descriptionAr: 'الفنون' },
+                { name: 'الرياضة', nameAr: 'الرياضة', description: 'Sports', descriptionAr: 'الرياضة' },
+                { name: 'الاقتصاد', nameAr: 'الاقتصاد', description: 'Economy', descriptionAr: 'الاقتصاد' },
+                { name: 'السياسة', nameAr: 'السياسة', description: 'Politics', descriptionAr: 'السياسة' },
+            ]);
+        }
+    };
 
     // Handle next slide
     const nextSlide = () => {
@@ -71,6 +93,10 @@ export default function Home() {
             return () => clearTimeout(timer);
         }
     }, [showToast]);
+
+    useEffect(() => {
+        fetchCategories();
+    }, []);
 
     // Handle image upload
     const handleImageUpload = (e) => {
@@ -137,13 +163,79 @@ export default function Home() {
     };
 
     // Get category name by ID
-    const getCategoryName = (categoryId) => {
-        const category = categories.find(cat => cat.id === categoryId);
-        return category ? category.name : 'غير محدد';
+    const getCategoryName = (categoryName) => {
+        const category = categories.find(cat => cat.name === categoryName);
+        return category ? category.nameAr || category.name : 'غير محدد';
     };
 
+    // Submit article to API
+    const submitArticle = async () => {
+        if (!userToken) {
+            console.error('User not authenticated');
+            return;
+        }
+
+        setIsLoading(true);
+        try {
+            const formData = new FormData();
+
+            // Create the dto object according to API schema
+            const articleDto = {
+                header: articleTitle,
+                bio: articleBio,
+                categoryName: selectedCategory
+            };
+
+            // Append the dto as JSON string
+            formData.append('dto', JSON.stringify(articleDto));
+
+            // Append the cover image file
+            if (coverImage) {
+                formData.append('file', coverImage);
+            }
+
+            const response = await axios.post(`${BASE_URL}articles`, formData, {
+                headers: {
+                    'Authorization': `Bearer ${userToken}`,
+                    'Content-Type': 'multipart/form-data'
+                }
+            });
+
+            console.log('Article submitted successfully:', response.data);
+            return true;
+        } catch (error) {
+            console.error('Error submitting article:', error);
+            return false;
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    // Add this useEffect after your existing useEffects
+    useEffect(() => {
+        const fetchArticles = async () => {
+            try {
+                console.log('Fetching articles...');
+                const response = await axios.get(`${BASE_URL}/articles`, {
+                    headers: {
+                        Authorization: `Bearer ${userToken}`
+                    }
+                });
+                console.log('Articles API Response:', response.data);
+                console.log('Status Code:', response.status);
+            } catch (error) {
+                console.error('Error fetching articles:', error);
+                console.error('Error response:', error.response?.data);
+                console.error('Error status:', error.response?.status);
+            }
+        };
+
+        fetchArticles();
+    }, [userToken]);
+
+
     // Handle form submission
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
 
         if (currentStep === 1) {
@@ -160,9 +252,15 @@ export default function Home() {
             }
             setCurrentStep(3);
         } else if (currentStep === 3) {
-            // Final submission
-            setShowToast(true);
-            handleClose();
+            // Final submission - call API
+            const success = await submitArticle();
+            if (success) {
+                setShowToast(true);
+                handleClose();
+            } else {
+                // Handle API error (you might want to show an error toast)
+                console.error('Failed to submit article');
+            }
         }
     };
 
@@ -171,9 +269,12 @@ export default function Home() {
         setShowSection2(false);
         setCurrentStep(1);
         setArticleTitle('');
+        setArticleBio(''); // RESET BIO
         setCoverImage(null);
         setImagePreview(null);
-        setSelectedCategory('politics');
+        if (categories.length > 0) {
+            setSelectedCategory(categories[0].name);
+        }
         setArticleSections([{ id: 1, title: '', content: '', image: null, imagePreview: null }]);
     };
 
@@ -186,7 +287,6 @@ export default function Home() {
 
     return (
         <div className='bg-[linear-gradient(164deg,#004025_-0.36%,rgba(255,255,255,0.80)_34.44%,rgba(0,64,37,0.50)_101.6%)] h-auto pb-25'>
-
             {/* add post section - Added hover animation */}
             <section className='flex justify-center items-center pt-30 md:pt-50 px-4'>
                 <div
@@ -211,7 +311,7 @@ export default function Home() {
                         msOverflowStyle: 'none'
                     }}
                 >
-                    <style jsx>{`
+                    <style jsx="true" global="true">{`
                         section::-webkit-scrollbar {
                             display: none;
                         }
@@ -315,6 +415,20 @@ export default function Home() {
                                         />
                                     </div>
 
+                                    {/* BIO INPUT - NEW */}
+                                    <div className='text-right w-full mt-6 md:mt-8'>
+                                        <label htmlFor="bio_post" className="font-Inter font-semibold text-[15px] md:text-[17px] leading-[30px] tracking-[0%] text-[#1B1D1E]">
+                                            نبذة عن المقال
+                                        </label>
+                                        <textarea
+                                            id="bio_post"
+                                            value={articleBio}
+                                            onChange={(e) => setArticleBio(e.target.value)}
+                                            className="w-full mt-3 md:mt-6 h-[80px] md:h-[90px] rounded-[12px] border border-[#D1D5DB] text-right px-4 py-3 opacity-100 bg-white font-[Inter] font-normal text-[14px] md:text-[16px] leading-[24px] tracking-[0%] placeholder:text-[#CCCCCC] text-black focus:outline-none focus:border-[#00844B] transition-colors resize-none"
+                                            placeholder="اكتب نبذة مختصرة عن المقال"
+                                        />
+                                    </div>
+
                                     {/* input of image */}
                                     <div className="text-right mt-6 md:mt-8 w-full">
                                         <label className="block font-Inter font-semibold text-[15px] md:text-[17px] leading-[30px] tracking-[0%] text-[#1B1D1E]">
@@ -371,16 +485,18 @@ export default function Home() {
                                         </label>
 
                                         <div className='grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-5 mt-3 md:mt-5'>
-                                            {categories.map((category) => (
+                                            {categories.map((category, index) => (
                                                 <button
-                                                    key={category.id}
+                                                    key={index}
                                                     type="button"
-                                                    onClick={() => setSelectedCategory(category.id)}
-                                                    className={`w-full h-[90px] md:h-[103.2px] rounded-[12px] border ${selectedCategory === category.id ? 'border-[#00844B] bg-[#00844B]/5' : 'border-[#E5E7EB]'} opacity-100 flex flex-col items-center justify-center gap-2 transition-all duration-300 hover:border-[#00844B] hover:bg-[#00844B]/5`}
+                                                    onClick={() => setSelectedCategory(category.name)}
+                                                    className={`w-full h-[90px] md:h-[103.2px] rounded-[12px] border ${selectedCategory === category.name ? 'border-[#00844B] bg-[#00844B]/5' : 'border-[#E5E7EB]'} opacity-100 flex flex-col items-center justify-center gap-2 transition-all duration-300 hover:border-[#00844B] hover:bg-[#00844B]/5`}
                                                 >
-                                                    <FontAwesomeIcon icon={category.icon} className={`text-xl md:text-2xl ${selectedCategory === category.id ? 'text-[#00844B]' : 'text-gray-600'} transition-colors`} />
-                                                    <h1 className={`font-Inter font-medium text-[12px] md:text-[13.6px] leading-[24px] tracking-[0%] text-center align-middle ${selectedCategory === category.id ? 'text-[#00844B]' : 'text-[#374151]'} transition-colors`}>
-                                                        {category.name}
+                                                    <div className={`w-10 h-10 rounded-full flex items-center justify-center ${selectedCategory === category.name ? 'bg-[#00844B] text-white' : 'bg-gray-200 text-gray-600'} transition-colors`}>
+                                                        <FontAwesomeIcon icon={faNewspaper} className="text-lg" />
+                                                    </div>
+                                                    <h1 className={`font-Inter font-medium text-[12px] md:text-[13.6px] leading-[24px] tracking-[0%] text-center align-middle ${selectedCategory === category.name ? 'text-[#00844B]' : 'text-[#374151]'} transition-colors`}>
+                                                        {category.nameAr || category.name}
                                                     </h1>
                                                 </button>
                                             ))}
@@ -587,11 +703,11 @@ export default function Home() {
                                                     <div className='md:me-10'>
                                                         {/* Section Header */}
                                                         <div className='flex items-center justify-between mb-3 gap-5'>
-                                                          
+
                                                             <h1 className='font-poppins font-semibold text-[16px] md:text-[17px] leading-[30px] tracking-[0%] align-middle text-[#1B1D1E] text-right'>
                                                                 {section.title || "عنوان محتوي المقال"}
                                                             </h1>
-                                                              <div className='flex items-center gap-2'>
+                                                            <div className='flex items-center gap-2'>
                                                                 <button
                                                                     type="button"
                                                                     onClick={() => setCurrentStep(2)}
@@ -631,7 +747,6 @@ export default function Home() {
                                         )}
                                     </div>
 
-                                 
                                 </div>
                             )}
 
@@ -661,15 +776,17 @@ export default function Home() {
                                         type="submit"
                                         disabled={
                                             (currentStep === 1 && (!articleTitle || !coverImage)) ||
-                                            (currentStep === 2 && !articleSections.some(section => section.title && section.content))
+                                            (currentStep === 2 && !articleSections.some(section => section.title && section.content)) ||
+                                            isLoading
                                         }
                                         className={`w-[100px] md:w-[119.05px] h-[45px] md:h-[48px] rounded-[12px] font-Inter font-medium text-[12px] md:text-[13.6px] leading-[24px] text-center align-middle text-white transition-all duration-300 ${(currentStep === 1 && (!articleTitle || !coverImage)) ||
-                                            (currentStep === 2 && !articleSections.some(section => section.title && section.content))
+                                            (currentStep === 2 && !articleSections.some(section => section.title && section.content)) ||
+                                            isLoading
                                             ? 'bg-[#00844B99] cursor-not-allowed'
                                             : 'bg-[#00844B] hover:bg-[#006D3D] cursor-pointer hover:shadow-md'
                                             }`}
                                     >
-                                        {currentStep === 3 ? 'نشر المقال' : 'التالي'}
+                                        {isLoading ? 'جاري النشر...' : currentStep === 3 ? 'نشر المقال' : 'التالي'}
                                     </button>
                                 </div>
                             </div>
@@ -691,7 +808,7 @@ export default function Home() {
             )}
 
             {/* Animation styles */}
-            <style jsx global>{`
+            <style jsx="true" global="true">{`
                 @keyframes fadeIn {
                     from { opacity: 0; }
                     to { opacity: 1; }
