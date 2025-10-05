@@ -216,7 +216,7 @@ export default function Home() {
         const fetchArticles = async () => {
             try {
                 console.log('Fetching articles...');
-                const response = await axios.get(`${BASE_URL}/articles`, {
+                const response = await axios.get(`${BASE_URL}articles`, {
                     headers: {
                         Authorization: `Bearer ${userToken}`
                     }
