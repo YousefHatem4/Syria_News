@@ -184,23 +184,24 @@ export default function Home() {
                 if (section.title && section.content) {
                     const formData = new FormData();
 
-                    // Create the dto object according to sections API schema
-                    const sectionDto = {
-                        id: section.id.toString(), // Convert to string if needed
-                        header: section.title,
-                        imageUrl: "", // This will be set by the backend after upload
-                        content: section.content
-                    };
-
+                    // // Create the dto object according to sections API schema
+                    // const sectionDto = {
+                    //     id: section.id.toString(), // Convert to string if needed
+                    //     header: section.title,
+                    //     imageUrl: "", // This will be set by the backend after upload
+                    //     content: section.content
+                    // };
+                    
                     // Append the dto as JSON string
-                    formData.append('dto', JSON.stringify(sectionDto));
+                    formData.append('header', section.title);
+                    formData.append('content', section.content);
 
                     // Append the section image file if exists
                     if (section.image) {
                         formData.append('file', section.image);
                     }
 
-                    console.log('Submitting section with DTO:', sectionDto);
+                    // console.log('Submitting section with DTO:', sectionDto);
                     console.log('Section image:', section.image ? 'Yes' : 'No');
 
                     const response = await axios.post(`${BASE_URL}sections/${articleId}`, formData, {
