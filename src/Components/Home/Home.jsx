@@ -46,10 +46,12 @@ export default function Home() {
         { id: 8, image: "morepost-3.png", title: "اشترك في النشرة الإخبارية", content: "أخبار وتحليلات خبراء لكل جدول. احصل على إصدارات الصباح والمساء من نشرتنا الإخبارية الرئيسية في بريدك الإلكتروني" }
     ];
 
-    // Fetch categories from API
+    // Fetch categories from API - Updated to handle new schema
     const fetchCategories = async () => {
         try {
             const response = await axios.get(`${BASE_URL}categories`);
+            console.log('Categories API Response:', response.data);
+
             if (response.data && Array.isArray(response.data)) {
                 setCategories(response.data);
                 // Set default selected category to first category if available
@@ -59,6 +61,7 @@ export default function Home() {
             }
         } catch (error) {
             console.error('Error fetching categories:', error);
+            console.error('Error response:', error.response?.data);
             // Fallback to default categories if API fails
             setCategories([
                 { name: 'الفنون', nameAr: 'الفنون', description: 'Arts', descriptionAr: 'الفنون' },
@@ -162,24 +165,75 @@ export default function Home() {
         );
     };
 
-    // Get category name by ID
+    // Get category name by ID - Updated to handle new schema
     const getCategoryName = (categoryName) => {
         const category = categories.find(cat => cat.name === categoryName);
         return category ? category.nameAr || category.name : 'غير محدد';
     };
 
-    // Submit article to API
+    // Submit article sections to API
+    const submitArticleSections = async (articleId) => {
+        if (!userToken) {
+            console.error('User not authenticated');
+            return false;
+        }
+
+        try {
+            // Submit each section
+            for (const section of articleSections) {
+                if (section.title && section.content) {
+                    const formData = new FormData();
+
+                    // Create the dto object according to sections API schema
+                    const sectionDto = {
+                        id: section.id.toString(), // Convert to string if needed
+                        header: section.title,
+                        imageUrl: "", // This will be set by the backend after upload
+                        content: section.content
+                    };
+
+                    // Append the dto as JSON string
+                    formData.append('dto', JSON.stringify(sectionDto));
+
+                    // Append the section image file if exists
+                    if (section.image) {
+                        formData.append('file', section.image);
+                    }
+
+                    console.log('Submitting section with DTO:', sectionDto);
+                    console.log('Section image:', section.image ? 'Yes' : 'No');
+
+                    const response = await axios.post(`${BASE_URL}sections/${articleId}`, formData, {
+                        headers: {
+                            'Authorization': `Bearer ${userToken}`,
+                            'Content-Type': 'multipart/form-data'
+                        }
+                    });
+
+                    console.log('Section submitted successfully:', response.data);
+                }
+            }
+            return true;
+        } catch (error) {
+            console.error('Error submitting article sections:', error);
+            console.error('Error response:', error.response?.data);
+            console.error('Error status:', error.response?.status);
+            return false;
+        }
+    };
+
+    // Submit article to API - Updated to match new DTO schema
     const submitArticle = async () => {
         if (!userToken) {
             console.error('User not authenticated');
-            return;
+            return false;
         }
 
         setIsLoading(true);
         try {
             const formData = new FormData();
 
-            // Create the dto object according to API schema
+            // Create the dto object according to new API schema
             const articleDto = {
                 header: articleTitle,
                 bio: articleBio,
@@ -194,6 +248,9 @@ export default function Home() {
                 formData.append('file', coverImage);
             }
 
+            console.log('Submitting article with DTO:', articleDto);
+            console.log('Cover image:', coverImage ? 'Yes' : 'No');
+
             const response = await axios.post(`${BASE_URL}articles`, formData, {
                 headers: {
                     'Authorization': `Bearer ${userToken}`,
@@ -202,9 +259,25 @@ export default function Home() {
             });
 
             console.log('Article submitted successfully:', response.data);
+
+            // Get the created article ID from response
+            const articleId = response.data.id;
+            console.log('Created article ID:', articleId);
+
+            // Now submit all sections for this article
+            if (articleId) {
+                const sectionsSuccess = await submitArticleSections(articleId);
+                if (!sectionsSuccess) {
+                    console.error('Failed to submit some sections');
+                    // You might want to handle this case appropriately
+                }
+            }
+
             return true;
         } catch (error) {
             console.error('Error submitting article:', error);
+            console.error('Error response:', error.response?.data);
+            console.error('Error status:', error.response?.status);
             return false;
         } finally {
             setIsLoading(false);
@@ -216,7 +289,7 @@ export default function Home() {
         const fetchArticles = async () => {
             try {
                 console.log('Fetching articles...');
-                const response = await axios.get(`${BASE_URL}/articles`, {
+                const response = await axios.get(`${BASE_URL}articles`, {
                     headers: {
                         Authorization: `Bearer ${userToken}`
                     }
@@ -230,7 +303,9 @@ export default function Home() {
             }
         };
 
-        fetchArticles();
+        if (userToken) {
+            fetchArticles();
+        }
     }, [userToken]);
 
 
