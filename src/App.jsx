@@ -20,7 +20,7 @@ import { Toaster } from 'react-hot-toast'
 import MoreNews from './Components/MoreNews/MoreNews'
 
 // ✅ Define Base URL here
-export const BASE_URL = "http://newssyriabackend-newsyria.up.railway.app/api/v1/";
+export const BASE_URL = "https://newssyriabackend-newsyria.up.railway.app/api/v1/";
 
 const routers = createBrowserRouter([
   {
