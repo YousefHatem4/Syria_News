@@ -6,15 +6,14 @@ import { userContext } from '../Context/userContext';
 import axios from 'axios';
 import { BASE_URL } from '../../App';
 
-
 export default function Navbar() {
     const location = useLocation();
     const currentPath = location.pathname;
     let { userToken, setUserToken } = useContext(userContext);
     let navigate = useNavigate();
 
-    const [menuOpen, setMenuOpen] = useState(false); // For Mobile Menu Toggle
-    const [userName, setUserName] = useState('أحمد'); // Default name
+    const [menuOpen, setMenuOpen] = useState(false);
+    const [userName, setUserName] = useState('أحمد');
 
     // Get user ID from localStorage
     const getUserId = () => {
@@ -28,9 +27,17 @@ export default function Navbar() {
                 const userId = getUserId();
                 if (!userId || !userToken) return;
 
+                console.log('Fetching user data for userId:', userId);
+
                 const response = await axios.get(`${BASE_URL}users/${userId}`, {
                     headers: {
-                        'Authorization': `Bearer ${userToken}`
+                        'Authorization': `Bearer ${userToken}`,
+                        'Content-Type': 'application/json'
+                    },
+                    // Add these to handle redirects
+                    maxRedirects: 0,
+                    validateStatus: function (status) {
+                        return status >= 200 && status < 303; // Accept 302 as valid
                     }
                 });
 
@@ -41,6 +48,13 @@ export default function Navbar() {
                 }
             } catch (error) {
                 console.error('Error fetching user data in Navbar:', error);
+                // If it's a redirect error, try to get data from response
+                if (error.response && error.response.data) {
+                    console.log('Redirect response data:', error.response.data);
+                    if (error.response.data.userName) {
+                        setUserName(error.response.data.userName);
+                    }
+                }
             }
         };
 
@@ -51,10 +65,12 @@ export default function Navbar() {
 
     function logOut() {
         localStorage.removeItem('userToken');
+        localStorage.removeItem('userId');
+        localStorage.removeItem('userRole');
+        localStorage.removeItem('userEmail');
         setUserToken(null);
         navigate('/');
     }
-
 
     return (
         <>
@@ -67,7 +83,6 @@ export default function Navbar() {
                         </span>
                     </Link>
 
-
                     {/* User Buttons */}
                     <div className="flex flex-wrap items-center gap-2 md:gap-3 md:order-2">
                         {userToken ? (
@@ -78,10 +93,9 @@ export default function Navbar() {
                                         className="text-[#000000C4] cursor-pointer bg-[#E9C882] py-2 px-3 font-bold rounded-lg text-sm sm:text-lg text-center my-Tajawal-text transition-all duration-300 hover:bg-[#d6b36f]"
                                     >
                                         <FontAwesomeIcon icon={faUser} className="me-1" />
-                                        مرحبا بك {userName}
+                                        {userName} مرحبا بك 
                                     </button>
                                 </Link>
-
 
                                 <button
                                     onClick={logOut}
@@ -104,7 +118,6 @@ export default function Navbar() {
                             </Link>
                         )}
 
-
                         {/* Hamburger Icon */}
                         <button
                             className="md:hidden text-2xl text-[#000000] ms-2 cursor-pointer"
@@ -113,7 +126,6 @@ export default function Navbar() {
                             <FontAwesomeIcon icon={menuOpen ? faXmark : faBars} />
                         </button>
                     </div>
-
 
                     {/* Desktop Menu */}
                     <div className="hidden md:flex md:w-auto md:order-1 lg:mt-2">
@@ -157,7 +169,6 @@ export default function Navbar() {
                         </ul>
                     </div>
                 </div>
-
 
                 {/* Mobile Menu */}
                 {menuOpen && (

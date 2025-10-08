@@ -23,14 +23,15 @@ export default function Profile() {
     const [profileImagePreview, setProfileImagePreview] = useState(null);
     const [userProfile, setUserProfile] = useState(null);
     const [isUploadingImage, setIsUploadingImage] = useState(false);
-    const [userRole, setUserRole] = useState('USER'); // Default to USER
+    const [userRole, setUserRole] = useState('USER');
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
 
-    let { userToken } = useContext(userContext);
+    let { userToken, userId } = useContext(userContext);
 
-    // Get user ID from localStorage or token
+    // Get user ID from context or localStorage
     const getUserId = () => {
-        const userId = localStorage.getItem('userId');
-        return userId;
+        return userId || localStorage.getItem('userId');
     };
 
     // Get user role from localStorage
@@ -43,16 +44,31 @@ export default function Profile() {
     const fetchUserProfile = async () => {
         try {
             const userId = getUserId();
-            if (!userId || !userToken) return;
+            if (!userId || !userToken) {
+                setError('User not authenticated');
+                setLoading(false);
+                return;
+            }
+
+            console.log('Fetching profile for userId:', userId);
 
             const response = await axios.get(`${BASE_URL}users/${userId}`, {
                 headers: {
-                    'Authorization': `Bearer ${userToken}`
+                    'Authorization': `Bearer ${userToken}`,
+                    'Content-Type': 'application/json'
+                },
+                // Handle redirects properly
+                maxRedirects: 0,
+                validateStatus: function (status) {
+                    return status >= 200 && status < 303; // Accept 302 as valid
                 }
             });
 
             console.log('User profile fetched:', response.data);
+
+            // The API is returning data even with 302 status
             setUserProfile(response.data);
+            setError(null);
 
             // Set user role from API response
             if (response.data.role) {
@@ -60,12 +76,51 @@ export default function Profile() {
                 localStorage.setItem('userRole', response.data.role);
             }
 
-            // Set profile image if exists
+            // Set profile image if exists - fix image URL
             if (response.data.imageUrl) {
-                setProfileImagePreview(response.data.imageUrl);
+                // Check if the URL is relative and needs BASE_URL prepended
+                let imageUrl = response.data.imageUrl;
+                if (imageUrl && !imageUrl.startsWith('http') && !imageUrl.startsWith('blob:')) {
+                    // If it's a UUID or path, construct the full URL
+                    if (imageUrl.includes('/')) {
+                        imageUrl = `${BASE_URL}${imageUrl.replace(/^\//, '')}`;
+                    } else {
+                        // Assume it's an image ID
+                        imageUrl = `${BASE_URL}images/${imageUrl}`;
+                    }
+                }
+                setProfileImagePreview(imageUrl);
             }
         } catch (error) {
             console.error('Error fetching user profile:', error);
+
+            // If it's a redirect but we got data, use it
+            if (error.response && error.response.data) {
+                console.log('Redirect but got data:', error.response.data);
+                setUserProfile(error.response.data);
+                setError(null);
+
+                if (error.response.data.role) {
+                    setUserRole(error.response.data.role);
+                    localStorage.setItem('userRole', error.response.data.role);
+                }
+
+                if (error.response.data.imageUrl) {
+                    let imageUrl = error.response.data.imageUrl;
+                    if (imageUrl && !imageUrl.startsWith('http') && !imageUrl.startsWith('blob:')) {
+                        if (imageUrl.includes('/')) {
+                            imageUrl = `${BASE_URL}${imageUrl.replace(/^\//, '')}`;
+                        } else {
+                            imageUrl = `${BASE_URL}images/${imageUrl}`;
+                        }
+                    }
+                    setProfileImagePreview(imageUrl);
+                }
+            } else {
+                setError('فشل في تحميل بيانات الملف الشخصي');
+            }
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -77,58 +132,72 @@ export default function Profile() {
 
             // Fetch profile data
             fetchUserProfile();
+        } else {
+            setLoading(false);
+            setError('يرجى تسجيل الدخول أولاً');
         }
     }, [userToken]);
 
-    // Handle profile image upload
-    const handleProfileImageUpload = async (e) => {
+    // Handle profile image upload - now just sets the image locally, doesn't upload immediately
+    const handleProfileImageUpload = (e) => {
         if (e.target.files && e.target.files[0]) {
             const file = e.target.files[0];
             setProfileImage(file);
-            setProfileImagePreview(URL.createObjectURL(file));
 
-            // Upload immediately
-            await uploadProfileImage(file);
+            // Create and set the preview URL
+            const previewUrl = URL.createObjectURL(file);
+            setProfileImagePreview(previewUrl);
+
+            console.log('Profile image selected:', file);
+            console.log('Preview URL created:', previewUrl);
         }
     };
 
-    // Upload profile image to API
-    const uploadProfileImage = async (file) => {
-        setIsUploadingImage(true);
-        try {
-            const userId = getUserId();
-            if (!userId || !userToken) {
-                console.error('User not authenticated');
-                return;
-            }
+    // Function to get the current profile image (for UserInfo component)
+    const getProfileImage = () => {
+        return profileImage;
+    };
 
-            const formData = new FormData();
-            formData.append('file', file);
+    // Function to clear profile image after successful upload (for UserInfo component)
+    const clearProfileImage = () => {
+        setProfileImage(null);
+        // Don't clear the preview - keep the new image displayed
+    };
 
-            const response = await axios.post(
-                `${BASE_URL}users/${userId}/complete-profile`,
-                formData,
-                {
-                    headers: {
-                        'Authorization': `Bearer ${userToken}`,
-                        'Content-Type': 'multipart/form-data'
-                    }
-                }
-            );
-
-            console.log('Profile image uploaded successfully:', response.data);
-            // Refresh profile data
-            await fetchUserProfile();
-        } catch (error) {
-            console.error('Error uploading profile image:', error);
-            console.error('Error response:', error.response?.data);
-        } finally {
-            setIsUploadingImage(false);
+    // Function to update the image preview after successful upload
+    const updateImagePreview = (newImageUrl) => {
+        if (newImageUrl) {
+            setProfileImagePreview(newImageUrl);
         }
     };
 
     // Check if user is admin
     const isAdmin = userRole === 'ADMIN';
+
+    if (loading) {
+        return (
+            <div className='bg-[linear-gradient(167deg,#2D4639_0%,#1B1D1E_88.4%)] min-h-screen flex justify-center items-center'>
+                <div className="text-white text-xl">جاري التحميل...</div>
+            </div>
+        );
+    }
+
+    if (error && !userProfile) {
+        return (
+            <div className='bg-[linear-gradient(167deg,#2D4639_0%,#1B1D1E_88.4%)] min-h-screen flex justify-center items-center'>
+                <div className="text-red-400 text-xl text-center">
+                    {error}
+                    <br />
+                    <button
+                        onClick={() => window.location.href = '/login'}
+                        className="mt-4 bg-[#00844B] text-white px-4 py-2 rounded"
+                    >
+                        العودة لتسجيل الدخول
+                    </button>
+                </div>
+            </div>
+        );
+    }
 
     return <>
         <section className='bg-[linear-gradient(167deg,#2D4639_0%,#1B1D1E_88.4%)] min-h-[150vh] pt-45 pb-20 '>
@@ -138,17 +207,22 @@ export default function Profile() {
                 <section className='relative'>
                     <div className='flex w-[120px] h-[120px] md:w-[150px] md:h-[150px] flex-col justify-center items-center shrink-0 rounded-[75px] flex-[1_0_0] border-[3px] border-[#E9C882] shadow-[0_5px_15px_0_rgba(0,0,0,0.30)] overflow-hidden bg-[#2D4639]'>
                         {profileImagePreview ? (
-                            <img src={profileImagePreview} alt="Profile" className="w-full h-full object-cover" />
+                            <img
+                                src={profileImagePreview}
+                                alt="Profile"
+                                className="w-full h-full object-cover"
+                                onError={(e) => {
+                                    // If image fails to load, fall back to default icon
+                                    console.error('Image failed to load:', profileImagePreview);
+                                    e.target.style.display = 'none';
+                                }}
+                            />
                         ) : (
                             <FontAwesomeIcon icon={faUserRegular} className="text-[#E9C882] text-3xl" />
                         )}
                     </div>
                     <label htmlFor="profile-image-upload" className='flex w-[30px] h-[30px] md:w-[40px] md:h-[40px] justify-center items-center absolute top-20 md:top-26 left-3 md:left-3 rounded-[20px] bg-[#00844B] cursor-pointer hover:bg-[#006D3D] transition-colors'>
-                        {isUploadingImage ? (
-                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                        ) : (
-                            <FontAwesomeIcon icon={faCamera} className="text-white text-right font-[Font_Awesome_5_Free] text-[12px] md:text-[16px] not-italic font-black leading-[16px]" />
-                        )}
+                        <FontAwesomeIcon icon={faCamera} className="text-white text-right font-[Font_Awesome_5_Free] text-[12px] md:text-[16px] not-italic font-black leading-[16px]" />
                     </label>
                     <input
                         id="profile-image-upload"
@@ -279,7 +353,13 @@ export default function Profile() {
                 )}
                 {/* Content section */}
                 <div className='w-full md:w-auto'>
-                    {info && <UserInfo userProfile={userProfile} refreshProfile={fetchUserProfile} />}
+                    {info && <UserInfo
+                        userProfile={userProfile}
+                        refreshProfile={fetchUserProfile}
+                        profileImage={getProfileImage()}
+                        clearProfileImage={clearProfileImage}
+                        updateImagePreview={updateImagePreview}
+                    />}
                     {changePass && <ChangePass />}
                     {posts && <UserPosts />}
                     {statistics && isAdmin && <Statistics />}

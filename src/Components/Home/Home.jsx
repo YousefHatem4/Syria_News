@@ -283,28 +283,28 @@ export default function Home() {
     };
 
     // Add this useEffect after your existing useEffects
-    useEffect(() => {
-        const fetchArticles = async () => {
-            try {
-                console.log('Fetching articles...');
-                const response = await axios.get(`${BASE_URL}articles`, {
-                    headers: {
-                        Authorization: `Bearer ${userToken}`
-                    }
-                });
-                console.log('Articles API Response:', response.data);
-                console.log('Status Code:', response.status);
-            } catch (error) {
-                console.error('Error fetching articles:', error);
-                console.error('Error response:', error.response?.data);
-                console.error('Error status:', error.response?.status);
-            }
-        };
+    // useEffect(() => {
+    //     const fetchArticles = async () => {
+    //         try {
+    //             console.log('Fetching articles...');
+    //             const response = await axios.get(`${BASE_URL}articles`, {
+    //                 headers: {
+    //                     Authorization: `Bearer ${userToken}`
+    //                 }
+    //             });
+    //             console.log('Articles API Response:', response.data);
+    //             console.log('Status Code:', response.status);
+    //         } catch (error) {
+    //             console.error('Error fetching articles:', error);
+    //             console.error('Error response:', error.response?.data);
+    //             console.error('Error status:', error.response?.status);
+    //         }
+    //     };
 
-        if (userToken) {
-            fetchArticles();
-        }
-    }, [userToken]);
+    //     if (userToken) {
+    //         fetchArticles();
+    //     }
+    // }, [userToken]);
 
 
     // Handle form submission

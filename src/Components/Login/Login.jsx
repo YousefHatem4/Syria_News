@@ -8,18 +8,15 @@ import axios from 'axios';
 import { userContext } from '../Context/userContext';
 import { BASE_URL } from '../../App'
 
-
 export default function Login() {
     const [showPassword, setShowPassword] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [loginError, setLoginError] = useState(null);
     const [loginSuccess, setLoginSuccess] = useState(false);
-    let { setUserToken } = useContext(userContext);
+    let { setUserToken, setUserId } = useContext(userContext);
     let navigate = useNavigate();
 
-
     const togglePasswordVisibility = () => setShowPassword(!showPassword);
-
 
     const validationSchema = Yup.object({
         email: Yup.string()
@@ -28,12 +25,9 @@ export default function Login() {
         password: Yup.string()
             .required('كلمة المرور مطلوبة')
     });
-
-
     async function login(values, { setSubmitting }) {
         setIsSubmitting(true);
         setLoginError(null);
-
 
         try {
             let { data } = await axios.post(
@@ -44,36 +38,39 @@ export default function Login() {
             console.log('Login response:', data);
 
             setLoginSuccess(true);
-            setUserToken(data.token);
-            localStorage.setItem('userToken', data.token);
 
-            // Store user roles from login response (roles is an array)
+            // Store all user data in context and localStorage
+            setUserToken(data.token);
+
+            // Check if setUserId exists before calling it
+            if (setUserId && typeof setUserId === 'function') {
+                setUserId(data.userId);
+            } else {
+                console.warn('setUserId is not available in context');
+            }
+
+            localStorage.setItem('userToken', data.token);
+            localStorage.setItem('userId', data.userId);
+            localStorage.setItem('userEmail', data.email);
+
+            // Store user roles from login response
             if (data.roles && data.roles.length > 0) {
-                // Store the first role or check if ADMIN exists in roles array
-                const userRole = data.roles.includes('ADMIN') ? 'ADMIN' : 'USER';
+                const userRole = data.roles.includes('ROLE_ADMIN') ? 'ADMIN' : 'USER';
                 localStorage.setItem('userRole', userRole);
                 console.log('User role stored:', userRole);
             }
 
-            // If userId is in response, store it
-            if (data.userId) {
-                localStorage.setItem('userId', data.userId);
-            }
-
-
-            setTimeout(() => {
-                navigate('/');
-            }, 2000);
-
+            // Navigate immediately without delay
+            navigate('/');
 
         } catch (error) {
+            console.error('Login error:', error);
             setLoginError(error.response?.data?.message || 'حدث خطأ أثناء تسجيل الدخول. يرجى المحاولة مرة أخرى.');
         } finally {
             setIsSubmitting(false);
             setSubmitting(false);
         }
     }
-
 
     const formik = useFormik({
         initialValues: {
@@ -84,11 +81,9 @@ export default function Login() {
         onSubmit: login
     });
 
-
     return (
         <div className='[background:linear-gradient(to_bottom_right,_#004025_0%,_#FFFFFFCC_80%,_transparent_100%)] min-h-[150vh] flex justify-center items-center py-10 md:py-0'>
             <section className='w-11/12 sm:w-10/12 md:w-9/12 flex flex-col lg:flex-row justify-center mt-5 md:-mt-15'>
-
 
                 {/* Left Side */}
                 <div className='w-full lg:w-5/12 min-h-[300px] sm:min-h-[350px] md:min-h-[400px] lg:min-h-[800px] bg-[linear-gradient(to_bottom,_#2D4639,_#6FAC8C)] rounded-t-2xl lg:rounded-bl-2xl lg:rounded-tr-none flex flex-col justify-center items-center text-white px-6 sm:px-8 py-10 text-center'>
@@ -100,7 +95,6 @@ export default function Login() {
                     </p>
                 </div>
 
-
                 {/* Right Side - Form */}
                 <div className='w-full lg:w-6/12 min-h-[500px] md:min-h-[800px] bg-white py-8 px-4 sm:px-8 rounded-b-2xl lg:rounded-bl-none lg:rounded-tr-2xl'>
                     <div className='flex flex-col items-center mt-4 md:mt-[170px]'>
@@ -111,20 +105,17 @@ export default function Login() {
                             املأ البيانات التالية للدخول
                         </p>
 
-
                         {loginSuccess && (
                             <div className="mt-4 p-3 bg-green-100 text-green-700 rounded text-sm">
                                 تم تسجيل الدخول بنجاح!
                             </div>
                         )}
 
-
                         {loginError && (
                             <div className="mt-4 p-3 bg-red-100 text-red-700 rounded text-sm">
                                 {loginError}
                             </div>
                         )}
-
 
                         <form
                             className='mt-6 sm:mt-8 md:mt-10 w-full flex flex-col items-center'
@@ -155,7 +146,6 @@ export default function Login() {
                                     <div className="text-red-500 text-xs text-right mt-1">{formik.errors.email}</div>
                                 ) : null}
                             </div>
-
 
                             {/* Password Field */}
                             <div className='relative w-full sm:w-[350px] md:w-[425px] mb-2'>
@@ -188,12 +178,10 @@ export default function Login() {
                                 ) : null}
                             </div>
 
-
                             {/* Forgot Password */}
                             <p className='text-right text-[#8A8A8A] text-[10px] sm:text-[12px] w-full sm:w-[350px] md:w-[425px] mb-4'>
                                 <Link to={'/forgetpass'}>هل نسيت كلمة السر ؟</Link>
                             </p>
-
 
                             {/* Submit Button */}
                             <button
@@ -205,7 +193,6 @@ export default function Login() {
                                 {!isSubmitting && <FontAwesomeIcon icon={faUserPlus} className="text-white text-[12px] ms-2" />}
                             </button>
                         </form>
-
 
                         {/* Bottom Text */}
                         <div className='text-[12px] sm:text-[13px] md:text-[14px] my-Tajawal-text mt-3 sm:mt-4 leading-[100%]'>

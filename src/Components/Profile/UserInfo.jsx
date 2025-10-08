@@ -5,7 +5,7 @@ import { BASE_URL } from '../../App';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faCheckCircle } from '@fortawesome/free-solid-svg-icons';
 
-export default function UserInfo({ userProfile, refreshProfile }) {
+export default function UserInfo({ userProfile, refreshProfile, profileImage, clearProfileImage, updateImagePreview }) {
     const [isOpen, setIsOpen] = useState(false);
     const [phoneNumber, setPhoneNumber] = useState('');
     const [bio, setBio] = useState('');
@@ -21,11 +21,37 @@ export default function UserInfo({ userProfile, refreshProfile }) {
         countryName: ''
     });
 
-    let { userToken } = useContext(userContext);
+    let { userToken, userId } = useContext(userContext);
 
-    // Get user ID from localStorage
+    // Country mapping - Arabic names to English codes/names
+    const countryMapping = {
+        'الأردن': 'Jordan',
+        'الإمارات العربية المتحدة': 'United Arab Emirates',
+        'البحرين': 'Bahrain',
+        'الجزائر': 'Algeria',
+        'السعودية': 'Saudi Arabia',
+        'السودان': 'Sudan',
+        'الصومال': 'Somalia',
+        'العراق': 'Iraq',
+        'الكويت': 'Kuwait',
+        'المغرب': 'Morocco',
+        'اليمن': 'Yemen',
+        'تونس': 'Tunisia',
+        'جزر القمر': 'Comoros',
+        'جيبوتي': 'Djibouti',
+        'سوريا': 'Syria',
+        'عمان': 'Oman',
+        'فلسطين': 'Palestine',
+        'قطر': 'Qatar',
+        'لبنان': 'Lebanon',
+        'ليبيا': 'Libya',
+        'مصر': 'Egypt',
+        'موريتانيا': 'Mauritania'
+    };
+
+    // Get user ID from context or localStorage
     const getUserId = () => {
-        return localStorage.getItem('userId');
+        return userId || localStorage.getItem('userId');
     };
 
     // Load user profile data when component mounts or userProfile changes
@@ -37,12 +63,23 @@ export default function UserInfo({ userProfile, refreshProfile }) {
 
             setPhoneNumber(phone);
             setBio(userBio);
-            setCountryName(country);
+
+            // Convert English country name back to Arabic for display
+            let arabicCountryName = '';
+            if (country) {
+                // Find Arabic name from English name
+                const entry = Object.entries(countryMapping).find(([arabic, english]) =>
+                    english === country || arabic === country
+                );
+                arabicCountryName = entry ? entry[0] : country;
+            }
+
+            setCountryName(arabicCountryName);
 
             setOriginalValues({
                 phoneNumber: phone,
                 bio: userBio,
-                countryName: country
+                countryName: arabicCountryName
             });
         }
     }, [userProfile]);
@@ -55,16 +92,22 @@ export default function UserInfo({ userProfile, refreshProfile }) {
         }
     }, [showToast]);
 
-    // Check if any field has changed
+    // Check if any field has changed (including profile image)
     const hasChanges = () => {
         return (
             phoneNumber !== originalValues.phoneNumber ||
             bio !== originalValues.bio ||
-            countryName !== originalValues.countryName
+            countryName !== originalValues.countryName ||
+            profileImage !== null
         );
     };
 
-    // Handle form submission
+    // Convert Arabic country name to English for API
+    const getEnglishCountryName = (arabicName) => {
+        return countryMapping[arabicName] || arabicName;
+    };
+
+    // Handle form submission - SENDS ALL FIELDS INCLUDING IMAGE
     const handleSubmit = async (e) => {
         e.preventDefault();
 
@@ -88,18 +131,30 @@ export default function UserInfo({ userProfile, refreshProfile }) {
 
             const formData = new FormData();
 
-            // Only append changed fields
-            if (phoneNumber !== originalValues.phoneNumber) {
-                formData.append('phoneNumber', phoneNumber);
-            }
-            if (bio !== originalValues.bio) {
-                formData.append('bio', bio);
-            }
-            if (countryName !== originalValues.countryName) {
-                formData.append('countryName', countryName);
+            // Append profile image if it exists (from Profile component)
+            if (profileImage) {
+                formData.append('file', profileImage);
+                console.log('Appending profile image to FormData');
             }
 
-            console.log('Submitting profile updates...');
+            // ALWAYS APPEND ALL FIELDS (not just changed ones)
+            formData.append('phoneNumber', phoneNumber || '');
+            formData.append('bio', bio || '');
+
+            // Convert Arabic country name to English for API
+            const englishCountryName = getEnglishCountryName(countryName);
+            formData.append('countryName', englishCountryName || '');
+
+            console.log('Submitting profile updates for userId:', userId);
+            console.log('Phone:', phoneNumber);
+            console.log('Bio:', bio);
+            console.log('Country name (Arabic):', countryName);
+            console.log('Country name (English):', englishCountryName);
+            console.log('Has profile image:', !!profileImage);
+            console.log('FormData contents:');
+            for (let [key, value] of formData.entries()) {
+                console.log(key, value);
+            }
 
             const response = await axios.post(
                 `${BASE_URL}users/${userId}/complete-profile`,
@@ -108,6 +163,11 @@ export default function UserInfo({ userProfile, refreshProfile }) {
                     headers: {
                         'Authorization': `Bearer ${userToken}`,
                         'Content-Type': 'multipart/form-data'
+                    },
+                    // Handle redirects for POST requests
+                    maxRedirects: 0,
+                    validateStatus: function (status) {
+                        return status >= 200 && status < 303;
                     }
                 }
             );
@@ -121,6 +181,26 @@ export default function UserInfo({ userProfile, refreshProfile }) {
                 countryName
             });
 
+            // Clear profile image after successful upload
+            if (profileImage && clearProfileImage) {
+                clearProfileImage();
+            }
+
+            // Update image preview with the new image URL from response if available
+            if (response.data.imageUrl) {
+                let imageUrl = response.data.imageUrl;
+                if (imageUrl && !imageUrl.startsWith('http') && !imageUrl.startsWith('blob:')) {
+                    if (imageUrl.includes('/')) {
+                        imageUrl = `${BASE_URL}${imageUrl.replace(/^\//, '')}`;
+                    } else {
+                        imageUrl = `${BASE_URL}images/${imageUrl}`;
+                    }
+                }
+                if (updateImagePreview) {
+                    updateImagePreview(imageUrl);
+                }
+            }
+
             setToastMessage('تم حفظ التغييرات بنجاح');
             setShowToast(true);
 
@@ -131,9 +211,28 @@ export default function UserInfo({ userProfile, refreshProfile }) {
 
         } catch (error) {
             console.error('Error updating profile:', error);
-            console.error('Error response:', error.response?.data);
-            setToastMessage('حدث خطأ أثناء حفظ التغييرات');
-            setShowToast(true);
+
+            // Handle specific error cases
+            if (error.response) {
+                const { status, data } = error.response;
+
+                if (status === 404 && data.message?.includes('country')) {
+                    setToastMessage('اسم الدولة غير صحيح. يرجى اختيار دولة من القائمة');
+                    setShowToast(true);
+                } else if (data.message) {
+                    setToastMessage(data.message);
+                    setShowToast(true);
+                } else {
+                    setToastMessage('حدث خطأ أثناء حفظ التغييرات');
+                    setShowToast(true);
+                }
+
+                // If we got data in redirect but it's an error, don't treat it as success
+                console.log('Error response:', data);
+            } else {
+                setToastMessage('حدث خطأ في الاتصال بالخادم');
+                setShowToast(true);
+            }
         } finally {
             setIsSubmitting(false);
         }
@@ -290,8 +389,8 @@ export default function UserInfo({ userProfile, refreshProfile }) {
                     type='submit'
                     disabled={isSubmitting || !hasChanges()}
                     className={`text-[#1B1D1E] mt-5 md:mt-7 text-center font-[Cairo] text-sm md:text-base not-italic font-semibold leading-normal flex w-full md:w-[738px] py-3 md:pt-[13.8px] md:pr-6 md:pb-[12.8px] md:pl-6 flex-col justify-center items-center rounded-[5px] transition-all duration-300 ${isSubmitting || !hasChanges()
-                            ? 'bg-[#E9C882]/50 cursor-not-allowed'
-                            : 'bg-[var(--light-sand-beige-e-9-c-882,#E9C882)] cursor-pointer hover:bg-[#d4b874]'
+                        ? 'bg-[#E9C882]/50 cursor-not-allowed'
+                        : 'bg-[var(--light-sand-beige-e-9-c-882,#E9C882)] cursor-pointer hover:bg-[#d4b874]'
                         }`}
                 >
                     {isSubmitting ? 'جاري الحفظ...' : 'حفظ التغييرات'}

@@ -20,7 +20,8 @@ import MoreNews from './Components/MoreNews/MoreNews'
 import ProtectedRoute from './Components/ProtectedRoute/ProtectedRoute'
 
 // ✅ Define Base URL here
-export const BASE_URL = "https://newssyriabackend-newsyria.up.railway.app/api/v1/";
+export const BASE_URL =  "https://newssyriabackend-newsyria.up.railway.app/api/v1/";
+
 
 const routers = createBrowserRouter([
   {
