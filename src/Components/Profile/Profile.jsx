@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect, useContext } from 'react'
 import style from './Profile.module.css'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faUser as faUserRegular, faAddressCard } from '@fortawesome/free-regular-svg-icons';
@@ -8,6 +8,9 @@ import ChangePass from './ChangePass';
 import UserPosts from './UserPosts';
 import Statistics from './Statistics';
 import LastPosts from './LastPosts';
+import axios from 'axios';
+import { userContext } from '../Context/userContext';
+import { BASE_URL } from '../../App';
 
 export default function Profile() {
     const [info, setInfo] = useState(true);
@@ -16,6 +19,116 @@ export default function Profile() {
     const [statistics, setStatistics] = useState(false);
     const [lastPosts, setLastPosts] = useState(false);
     const [showMobileMenu, setShowMobileMenu] = useState(false);
+    const [profileImage, setProfileImage] = useState(null);
+    const [profileImagePreview, setProfileImagePreview] = useState(null);
+    const [userProfile, setUserProfile] = useState(null);
+    const [isUploadingImage, setIsUploadingImage] = useState(false);
+    const [userRole, setUserRole] = useState('USER'); // Default to USER
+
+    let { userToken } = useContext(userContext);
+
+    // Get user ID from localStorage or token
+    const getUserId = () => {
+        const userId = localStorage.getItem('userId');
+        return userId;
+    };
+
+    // Get user role from localStorage
+    const getUserRole = () => {
+        const role = localStorage.getItem('userRole');
+        return role || 'USER';
+    };
+
+    // Fetch user profile data
+    const fetchUserProfile = async () => {
+        try {
+            const userId = getUserId();
+            if (!userId || !userToken) return;
+
+            const response = await axios.get(`${BASE_URL}users/${userId}`, {
+                headers: {
+                    'Authorization': `Bearer ${userToken}`
+                }
+            });
+
+            console.log('User profile fetched:', response.data);
+            setUserProfile(response.data);
+
+            // Set user role from API response
+            if (response.data.role) {
+                setUserRole(response.data.role);
+                localStorage.setItem('userRole', response.data.role);
+            }
+
+            // Set profile image if exists
+            if (response.data.imageUrl) {
+                setProfileImagePreview(response.data.imageUrl);
+            }
+        } catch (error) {
+            console.error('Error fetching user profile:', error);
+        }
+    };
+
+    useEffect(() => {
+        if (userToken) {
+            // Get role from localStorage first
+            const role = getUserRole();
+            setUserRole(role);
+
+            // Fetch profile data
+            fetchUserProfile();
+        }
+    }, [userToken]);
+
+    // Handle profile image upload
+    const handleProfileImageUpload = async (e) => {
+        if (e.target.files && e.target.files[0]) {
+            const file = e.target.files[0];
+            setProfileImage(file);
+            setProfileImagePreview(URL.createObjectURL(file));
+
+            // Upload immediately
+            await uploadProfileImage(file);
+        }
+    };
+
+    // Upload profile image to API
+    const uploadProfileImage = async (file) => {
+        setIsUploadingImage(true);
+        try {
+            const userId = getUserId();
+            if (!userId || !userToken) {
+                console.error('User not authenticated');
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('file', file);
+
+            const response = await axios.post(
+                `${BASE_URL}users/${userId}/complete-profile`,
+                formData,
+                {
+                    headers: {
+                        'Authorization': `Bearer ${userToken}`,
+                        'Content-Type': 'multipart/form-data'
+                    }
+                }
+            );
+
+            console.log('Profile image uploaded successfully:', response.data);
+            // Refresh profile data
+            await fetchUserProfile();
+        } catch (error) {
+            console.error('Error uploading profile image:', error);
+            console.error('Error response:', error.response?.data);
+        } finally {
+            setIsUploadingImage(false);
+        }
+    };
+
+    // Check if user is admin
+    const isAdmin = userRole === 'ADMIN';
 
     return <>
         <section className='bg-[linear-gradient(167deg,#2D4639_0%,#1B1D1E_88.4%)] min-h-[150vh] pt-45 pb-20 '>
@@ -23,18 +136,39 @@ export default function Profile() {
             <section className='flex flex-col items-center '>
                 {/* Add Picture Profile */}
                 <section className='relative'>
-                    <div className='flex w-[120px] h-[120px] md:w-[150px] md:h-[150px] flex-col justify-center items-center shrink-0 rounded-[75px] flex-[1_0_0] border-[3px] border-[#E9C882] shadow-[0_5px_15px_0_rgba(0,0,0,0.30)]'>
-                        <FontAwesomeIcon icon={faUserRegular} className="text-[#E9C882] text-3xl" />
+                    <div className='flex w-[120px] h-[120px] md:w-[150px] md:h-[150px] flex-col justify-center items-center shrink-0 rounded-[75px] flex-[1_0_0] border-[3px] border-[#E9C882] shadow-[0_5px_15px_0_rgba(0,0,0,0.30)] overflow-hidden bg-[#2D4639]'>
+                        {profileImagePreview ? (
+                            <img src={profileImagePreview} alt="Profile" className="w-full h-full object-cover" />
+                        ) : (
+                            <FontAwesomeIcon icon={faUserRegular} className="text-[#E9C882] text-3xl" />
+                        )}
                     </div>
-                    <div className='flex w-[30px] h-[30px] md:w-[40px] md:h-[40px] justify-center items-center absolute top-20 md:top-26 left-3 md:left-3 rounded-[20px] bg-[#00844B] cursor-pointer'>
-                        <FontAwesomeIcon icon={faCamera} className="text-white text-right font-[Font_Awesome_5_Free] text-[12px] md:text-[16px] not-italic font-black leading-[16px]" />
-                    </div>
+                    <label htmlFor="profile-image-upload" className='flex w-[30px] h-[30px] md:w-[40px] md:h-[40px] justify-center items-center absolute top-20 md:top-26 left-3 md:left-3 rounded-[20px] bg-[#00844B] cursor-pointer hover:bg-[#006D3D] transition-colors'>
+                        {isUploadingImage ? (
+                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                        ) : (
+                            <FontAwesomeIcon icon={faCamera} className="text-white text-right font-[Font_Awesome_5_Free] text-[12px] md:text-[16px] not-italic font-black leading-[16px]" />
+                        )}
+                    </label>
+                    <input
+                        id="profile-image-upload"
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={handleProfileImageUpload}
+                    />
                 </section>
 
                 {/* info of user */}
-                <h1 className='text-[#E9C882] text-right font-[Tajawal] text-[24px] md:text-[28px] not-italic font-bold leading-normal mt-6'>أحمد محمد</h1>
-                <p className='text-[#8A8A8A] text-right font-[Cairo] text-[14px] md:text-[16px] not-italic font-normal leading-[27.2px] mt-3'>ahmed@example.com</p>
-                <h1 className='text-[#E9C882] text-center font-[Poppins] text-[18px] md:text-[20px] not-italic font-semibold leading-normal mt-7'>47</h1>
+                <h1 className='text-[#E9C882] text-right font-[Tajawal] text-[24px] md:text-[28px] not-italic font-bold leading-normal mt-6'>
+                    {userProfile?.userName || 'أحمد محمد'}
+                </h1>
+                <p className='text-[#8A8A8A] text-right font-[Cairo] text-[14px] md:text-[16px] not-italic font-normal leading-[27.2px] mt-3'>
+                    {userProfile?.email || 'ahmed@example.com'}
+                </p>
+                <h1 className='text-[#E9C882] text-center font-[Poppins] text-[18px] md:text-[20px] not-italic font-semibold leading-normal mt-7'>
+                    {userProfile?.postsCount || '47'}
+                </h1>
                 <p className='text-[#8A8A8A] text-center font-[Tajawal] text-[12px] md:text-[14px] not-italic font-normal leading-normal -mt-2'>منشور</p>
                 <div className='w-[90%] md:w-[75.5%] h-[1px] bg-[rgba(233,200,130,0.45)] my-8 md:my-12'></div>
             </section>
@@ -60,6 +194,7 @@ export default function Profile() {
                         </div>
 
                         <div className='mt-3 flex flex-col gap-5 w-full items-end'>
+                            {/* Always show these 3 items for all users */}
                             <div
                                 onClick={() => {
                                     setInfo(true);
@@ -105,45 +240,50 @@ export default function Profile() {
                                 <FontAwesomeIcon icon={faAddressCard} />
                             </div>
 
-                            <div
-                                onClick={() => {
-                                    setInfo(false);
-                                    setChangePass(false);
-                                    setPosts(false);
-                                    setStatistics(true);
-                                    setLastPosts(false);
-                                    setShowMobileMenu(false);
-                                }}
-                                className={`text-right font-[Cairo] text-base not-italic font-normal leading-[27.2px] flex   cursor-pointer items-center gap-2 w-full justify-end p-3 rounded ${statistics ? 'text-[#E9C882] bg-[rgba(233,200,130,0.10)]' : 'text-white'}`}
-                            >
-                                <h1>الإحصائيات</h1>
-                                <FontAwesomeIcon icon={faChartLine} />
-                            </div>
+                            {/* Only show these items for ADMIN users */}
+                            {isAdmin && (
+                                <>
+                                    <div
+                                        onClick={() => {
+                                            setInfo(false);
+                                            setChangePass(false);
+                                            setPosts(false);
+                                            setStatistics(true);
+                                            setLastPosts(false);
+                                            setShowMobileMenu(false);
+                                        }}
+                                        className={`text-right font-[Cairo] text-base not-italic font-normal leading-[27.2px] flex   cursor-pointer items-center gap-2 w-full justify-end p-3 rounded ${statistics ? 'text-[#E9C882] bg-[rgba(233,200,130,0.10)]' : 'text-white'}`}
+                                    >
+                                        <h1>الإحصائيات</h1>
+                                        <FontAwesomeIcon icon={faChartLine} />
+                                    </div>
 
-                            <div
-                                onClick={() => {
-                                    setInfo(false);
-                                    setChangePass(false);
-                                    setPosts(false);
-                                    setStatistics(false);
-                                    setLastPosts(true);
-                                    setShowMobileMenu(false);
-                                }}
-                                className={`text-right font-[Cairo] text-base not-italic font-normal leading-[27.2px] flex cursor-pointer items-center gap-2 w-full justify-end p-3 rounded ${lastPosts ? 'text-[#E9C882] bg-[rgba(233,200,130,0.10)]' : 'text-white'}`}
-                            >
-                                <h1>آخر المنشورات</h1>
-                                <FontAwesomeIcon icon={faRectangleList} />
-                            </div>
+                                    <div
+                                        onClick={() => {
+                                            setInfo(false);
+                                            setChangePass(false);
+                                            setPosts(false);
+                                            setStatistics(false);
+                                            setLastPosts(true);
+                                            setShowMobileMenu(false);
+                                        }}
+                                        className={`text-right font-[Cairo] text-base not-italic font-normal leading-[27.2px] flex cursor-pointer items-center gap-2 w-full justify-end p-3 rounded ${lastPosts ? 'text-[#E9C882] bg-[rgba(233,200,130,0.10)]' : 'text-white'}`}
+                                    >
+                                        <h1>آخر المنشورات</h1>
+                                        <FontAwesomeIcon icon={faRectangleList} />
+                                    </div>
+                                </>
+                            )}
                         </div>
                     </div>
                 )}
                 {/* Content section */}
                 <div className='w-full md:w-auto'>
-                    {info && <UserInfo />}
+                    {info && <UserInfo userProfile={userProfile} refreshProfile={fetchUserProfile} />}
                     {changePass && <ChangePass />}
                     {posts && <UserPosts />}
-                    {statistics && <Statistics />}
-                    {lastPosts && <LastPosts />}
+                    {statistics && isAdmin && <Statistics />}
+                    {lastPosts && isAdmin && <LastPosts />}
                 </div>
 
                 {/* sidebar - desktop */}
@@ -156,7 +296,8 @@ export default function Profile() {
 
                     {/* sidebar items */}
                     <div className='mt-3 flex flex-col gap-5 lg:gap-7 items-end'>
-                        {/* item 1 */}
+                        {/* Always show these 3 items for all users */}
+                        {/* item 1 - المعلومات الشخصية */}
                         {info ? (
                             <div className='flex pl-[50px] lg:pl-[74.28px] pr-[10px] lg:pr-[12.79px] pt-[10px] lg:pt-[11.79px] pb-[10px] lg:pb-[12.8px] items-center gap-[10px] lg:gap-[12.8px] self-stretch rounded-[5px] bg-[rgba(233,200,130,0.10)] shadow-[0_4px_4px_rgba(0,0,0,0.25)]'>
                                 <div className='text-[#E9C882] text-right font-[Cairo] text-[14px] lg:text-base not-italic font-normal leading-[27.2px] flex items-center gap-1 -me-1'>
@@ -180,7 +321,7 @@ export default function Profile() {
                             </div>
                         )}
 
-                        {/* item 2 */}
+                        {/* item 2 - تغيير كلمة السر */}
                         {changePass ? (
                             <div className='flex pl-[90px] lg:pl-[120px] pr-[10px] lg:pr-[12.79px] pt-[10px] lg:pt-[11.79px] pb-[10px] lg:pb-[12.8px] items-center gap-[10px] lg:gap-[12.8px] self-stretch rounded-[5px] bg-[rgba(233,200,130,0.10)] shadow-[0_4px_4px_rgba(0,0,0,0.25)]'>
                                 <div className='text-[#E9C882] text-right font-[Cairo] text-[14px] lg:text-base not-italic font-normal leading-[27.2px] flex items-center gap-1 -me-2'>
@@ -204,7 +345,7 @@ export default function Profile() {
                             </div>
                         )}
 
-                        {/* item 3 */}
+                        {/* item 3 - منشوراتي */}
                         {posts ? (
                             <div className='flex pl-[120px] lg:pl-[150px] pr-[10px] lg:pr-[12.79px] pt-[10px] lg:pt-[11.79px] pb-[10px] lg:pb-[12.8px] items-center gap-[10px] lg:gap-[12.8px] self-stretch rounded-[5px] bg-[rgba(233,200,130,0.10)] shadow-[0_4px_4px_rgba(0,0,0,0.25)]'>
                                 <div className='text-[#E9C882] text-right font-[Cairo] text-[14px] lg:text-base not-italic font-normal leading-[27.2px] flex items-center gap-2 -me-2'>
@@ -228,52 +369,57 @@ export default function Profile() {
                             </div>
                         )}
 
-                        {/* item 4 */}
-                        {statistics ? (
-                            <div className='flex pl-[120px] lg:pl-[150px] pr-[10px] lg:pr-[12.79px] pt-[10px] lg:pt-[11.79px] pb-[10px] lg:pb-[12.8px] items-center gap-[10px] lg:gap-[12.8px] self-stretch rounded-[5px] bg-[rgba(233,200,130,0.10)] shadow-[0_4px_4px_rgba(0,0,0,0.25)]'>
-                                <div className='text-[#E9C882] text-right font-[Cairo] text-[14px] lg:text-base not-italic font-normal leading-[27.2px] flex items-center gap-2 -me-2'>
-                                    <h1>الإحصائيات</h1>
-                                    <FontAwesomeIcon icon={faChartLine} />
-                                </div>
-                            </div>
-                        ) : (
-                            <div
-                                onClick={() => {
-                                    setInfo(false);
-                                    setChangePass(false);
-                                    setPosts(false);
-                                    setLastPosts(false);
-                                    setStatistics(true);
-                                }}
-                                className='text-white cursor-pointer text-right me-1 font-[Cairo] text-[14px] lg:text-base not-italic font-normal leading-[27.2px] flex items-center gap-2'
-                            >
-                                <h1>الإحصائيات</h1>
-                                <FontAwesomeIcon icon={faChartLine} />
-                            </div>
-                        )}
+                        {/* Only show these items for ADMIN users */}
+                        {isAdmin && (
+                            <>
+                                {/* item 4 - الإحصائيات */}
+                                {statistics ? (
+                                    <div className='flex pl-[120px] lg:pl-[150px] pr-[10px] lg:pr-[12.79px] pt-[10px] lg:pt-[11.79px] pb-[10px] lg:pb-[12.8px] items-center gap-[10px] lg:gap-[12.8px] self-stretch rounded-[5px] bg-[rgba(233,200,130,0.10)] shadow-[0_4px_4px_rgba(0,0,0,0.25)]'>
+                                        <div className='text-[#E9C882] text-right font-[Cairo] text-[14px] lg:text-base not-italic font-normal leading-[27.2px] flex items-center gap-2 -me-2'>
+                                            <h1>الإحصائيات</h1>
+                                            <FontAwesomeIcon icon={faChartLine} />
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <div
+                                        onClick={() => {
+                                            setInfo(false);
+                                            setChangePass(false);
+                                            setPosts(false);
+                                            setLastPosts(false);
+                                            setStatistics(true);
+                                        }}
+                                        className='text-white cursor-pointer text-right me-1 font-[Cairo] text-[14px] lg:text-base not-italic font-normal leading-[27.2px] flex items-center gap-2'
+                                    >
+                                        <h1>الإحصائيات</h1>
+                                        <FontAwesomeIcon icon={faChartLine} />
+                                    </div>
+                                )}
 
-                        {/* item 5 */}
-                        {lastPosts ? (
-                            <div className='flex pl-[120px] lg:pl-[130px] pr-[10px] lg:pr-[12.79px] pt-[10px] lg:pt-[11.79px] pb-[10px] lg:pb-[12.8px] items-center gap-[10px] lg:gap-[12.8px] self-stretch rounded-[5px] bg-[rgba(233,200,130,0.10)] shadow-[0_4px_4px_rgba(0,0,0,0.25)]'>
-                                <div className='text-[#E9C882] whitespace-nowrap text-right font-[Cairo] text-[14px] lg:text-base not-italic font-normal leading-[27.2px] flex items-center gap-2 -me-2'>
-                                    <h1 className='inline'>آخر المنشورات</h1>
-                                    <FontAwesomeIcon icon={faRectangleList} />
-                                </div>
-                            </div>
-                        ) : (
-                            <div
-                                onClick={() => {
-                                    setInfo(false);
-                                    setChangePass(false);
-                                    setPosts(false);
-                                    setStatistics(false);
-                                    setLastPosts(true);
-                                }}
-                                className='text-white cursor-pointer text-right me-1 font-[Cairo] text-[14px] lg:text-base not-italic font-normal leading-[27.2px] flex items-center gap-2'
-                            >
-                                <h1>آخر المنشورات</h1>
-                                <FontAwesomeIcon icon={faRectangleList} />
-                            </div>
+                                {/* item 5 - آخر المنشورات */}
+                                {lastPosts ? (
+                                    <div className='flex pl-[120px] lg:pl-[130px] pr-[10px] lg:pr-[12.79px] pt-[10px] lg:pt-[11.79px] pb-[10px] lg:pb-[12.8px] items-center gap-[10px] lg:gap-[12.8px] self-stretch rounded-[5px] bg-[rgba(233,200,130,0.10)] shadow-[0_4px_4px_rgba(0,0,0,0.25)]'>
+                                        <div className='text-[#E9C882] whitespace-nowrap text-right font-[Cairo] text-[14px] lg:text-base not-italic font-normal leading-[27.2px] flex items-center gap-2 -me-2'>
+                                            <h1 className='inline'>آخر المنشورات</h1>
+                                            <FontAwesomeIcon icon={faRectangleList} />
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <div
+                                        onClick={() => {
+                                            setInfo(false);
+                                            setChangePass(false);
+                                            setPosts(false);
+                                            setStatistics(false);
+                                            setLastPosts(true);
+                                        }}
+                                        className='text-white cursor-pointer text-right me-1 font-[Cairo] text-[14px] lg:text-base not-italic font-normal leading-[27.2px] flex items-center gap-2'
+                                    >
+                                        <h1>آخر المنشورات</h1>
+                                        <FontAwesomeIcon icon={faRectangleList} />
+                                    </div>
+                                )}
+                            </>
                         )}
 
                     </div>

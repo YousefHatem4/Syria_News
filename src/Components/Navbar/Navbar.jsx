@@ -1,8 +1,11 @@
-import React, { useContext, useState } from 'react';
+import React, { useContext, useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faUser, faRightFromBracket, faRightToBracket, faBars, faXmark } from '@fortawesome/free-solid-svg-icons';
 import { userContext } from '../Context/userContext';
+import axios from 'axios';
+import { BASE_URL } from '../../App';
+
 
 export default function Navbar() {
     const location = useLocation();
@@ -11,12 +14,47 @@ export default function Navbar() {
     let navigate = useNavigate();
 
     const [menuOpen, setMenuOpen] = useState(false); // For Mobile Menu Toggle
+    const [userName, setUserName] = useState('أحمد'); // Default name
+
+    // Get user ID from localStorage
+    const getUserId = () => {
+        return localStorage.getItem('userId');
+    };
+
+    // Fetch user data when component mounts
+    useEffect(() => {
+        const fetchUserData = async () => {
+            try {
+                const userId = getUserId();
+                if (!userId || !userToken) return;
+
+                const response = await axios.get(`${BASE_URL}users/${userId}`, {
+                    headers: {
+                        'Authorization': `Bearer ${userToken}`
+                    }
+                });
+
+                console.log('User data fetched in Navbar:', response.data);
+
+                if (response.data.userName) {
+                    setUserName(response.data.userName);
+                }
+            } catch (error) {
+                console.error('Error fetching user data in Navbar:', error);
+            }
+        };
+
+        if (userToken) {
+            fetchUserData();
+        }
+    }, [userToken]);
 
     function logOut() {
         localStorage.removeItem('userToken');
         setUserToken(null);
         navigate('/');
     }
+
 
     return (
         <>
@@ -29,6 +67,7 @@ export default function Navbar() {
                         </span>
                     </Link>
 
+
                     {/* User Buttons */}
                     <div className="flex flex-wrap items-center gap-2 md:gap-3 md:order-2">
                         {userToken ? (
@@ -39,9 +78,10 @@ export default function Navbar() {
                                         className="text-[#000000C4] cursor-pointer bg-[#E9C882] py-2 px-3 font-bold rounded-lg text-sm sm:text-lg text-center my-Tajawal-text transition-all duration-300 hover:bg-[#d6b36f]"
                                     >
                                         <FontAwesomeIcon icon={faUser} className="me-1" />
-                                        مرحبا بك أحمد
+                                        مرحبا بك {userName}
                                     </button>
                                 </Link>
+
 
                                 <button
                                     onClick={logOut}
@@ -64,6 +104,7 @@ export default function Navbar() {
                             </Link>
                         )}
 
+
                         {/* Hamburger Icon */}
                         <button
                             className="md:hidden text-2xl text-[#000000] ms-2 cursor-pointer"
@@ -72,6 +113,7 @@ export default function Navbar() {
                             <FontAwesomeIcon icon={menuOpen ? faXmark : faBars} />
                         </button>
                     </div>
+
 
                     {/* Desktop Menu */}
                     <div className="hidden md:flex md:w-auto md:order-1 lg:mt-2">
@@ -115,6 +157,7 @@ export default function Navbar() {
                         </ul>
                     </div>
                 </div>
+
 
                 {/* Mobile Menu */}
                 {menuOpen && (
