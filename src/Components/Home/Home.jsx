@@ -2,7 +2,7 @@ import React, { useEffect, useState, useRef, useContext } from 'react'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faFire, faCirclePlus, faSquarePollVertical, faCamera, faVideo, faCheckCircle, faTimes, faClock, faAngleLeft, faAngleRight, faLandmark, faGavel, faFutbol, faMasksTheater, faCheck, faPlus, faPen, faBars } from '@fortawesome/free-solid-svg-icons';
 import { faNewspaper, faUser, faCalendar, faClock as faclock } from '@fortawesome/free-regular-svg-icons';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import "slick-carousel/slick/slick.css";
 import "slick-carousel/slick/slick-theme.css";
 import axios from 'axios';
@@ -22,6 +22,7 @@ export default function Home() {
     const [isLoading, setIsLoading] = useState(false);
     const modalRef = useRef(null);
     let { userToken } = useContext(userContext);
+    const navigate = useNavigate();
 
     // New state for article sections
     const [articleSections, setArticleSections] = useState([
@@ -184,14 +185,7 @@ export default function Home() {
                 if (section.title && section.content) {
                     const formData = new FormData();
 
-                    // // Create the dto object according to sections API schema
-                    // const sectionDto = {
-                    //     id: section.id.toString(), // Convert to string if needed
-                    //     header: section.title,
-                    //     imageUrl: "", // This will be set by the backend after upload
-                    //     content: section.content
-                    // };
-                    
+             
                     // Append the dto as JSON string
                     formData.append('header', section.title);
                     formData.append('content', section.content);
@@ -369,7 +363,13 @@ export default function Home() {
             {/* add post section - Added hover animation */}
             <section className='flex justify-center items-center pt-30 md:pt-50 px-4'>
                 <div
-                    onClick={() => setShowSection2(true)}
+                    onClick={() => {
+                        if (!userToken) {
+                            navigate('/login');
+                        } else {
+                            setShowSection2(true);
+                        }
+                    }}
                     className='flex w-full max-w-[407px] cursor-pointer items-center justify-between md:gap-[123px] px-[6px] py-[5px] rounded-[12px] border border-black/30 transition-all duration-300 hover:bg-white/10 hover:shadow-md hover:scale-[1.02]'
                 >
                     <p className='text-white font-poppins text-[12px] font-normal leading-normal truncate'>......اكتب عن الخبر الذي تريده </p>
