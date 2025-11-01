@@ -43,7 +43,6 @@ export default function LastPosts() {
       };
 
       console.log("API Request with params:", params);
-      console.log("Full URL:", `${BASE_URL}articles/status?page=${page}&size=${postsPerPage}&status=${status}&sort=desc`);
 
       const response = await axios.get(`${BASE_URL}articles/status`, {
         params: params,
@@ -58,17 +57,27 @@ export default function LastPosts() {
       console.log("API Response received:", response.data);
 
       if (response.data && Array.isArray(response.data.content)) {
-        // Filter posts client-side as well to ensure only matching status posts are shown
-        const filteredPosts = response.data.content.filter(post =>
-          post.status === status
-        );
+        // Convert API status (UPPERCASE) to match our filter (lowercase)
+        const apiStatusToFilterStatus = {
+          'APPROVED': 'approved',
+          'PENDING': 'pending',
+          'REJECTED': 'rejected'
+        };
+
+        // Filter posts client-side - convert API status to lowercase for comparison
+        const filteredPosts = response.data.content.filter(post => {
+          const postStatusNormalized = apiStatusToFilterStatus[post.status] || post.status.toLowerCase();
+          return postStatusNormalized === status;
+        });
 
         console.log(`API returned ${response.data.content.length} posts, filtered to ${filteredPosts.length} posts with status: ${status}`);
+        console.log("Filtered posts:", filteredPosts);
 
         setPosts(filteredPosts);
         setTotalPages(response.data.totalPages || 1);
-        setTotalElements(filteredPosts.length); // Use filtered count for display
+        setTotalElements(response.data.totalElements || filteredPosts.length);
       } else {
+        console.error("Invalid response format - content is not an array:", response.data);
         throw new Error("Invalid response format from API");
       }
     } catch (err) {
@@ -115,27 +124,32 @@ export default function LastPosts() {
     }
   };
 
-  // Update post status
-  const updatePostStatus = async (postId, status) => {
+  // Update post status - FIXED VERSION with PUT and boolean status
+  const updatePostStatus = async (postId, isApproved) => {
     try {
-      console.log("Updating post status:", { postId, status });
+      console.log("Updating post status:", { postId, isApproved });
 
       if (!userToken) {
         throw new Error("يجب تسجيل الدخول أولاً");
       }
 
-      const response = await axios.patch(
-        `${BASE_URL}articles/${postId}/review?status=${status}`,
+      // Send boolean value directly: true for approved, false for rejected
+      console.log("Sending status update with boolean value:", isApproved);
+
+      // Try PUT with boolean parameter
+      const response = await axios.put(
+        `${BASE_URL}articles/${postId}/review?status=${isApproved}`,
         null,
         {
           timeout: 10000,
           headers: {
             'Authorization': `Bearer ${userToken}`,
             'Accept': 'application/json',
-            'Content-Type': 'application/json',
           }
         }
       );
+
+      console.log("Status update successful:", response.data);
 
       // Refresh the posts after status update
       fetchPosts(currentPage, filterStatus);
@@ -143,7 +157,20 @@ export default function LastPosts() {
       return true;
     } catch (err) {
       console.error("Error updating post status:", err);
-      setError(`فشل في تحديث الحالة: ${err.response?.data?.message || err.message}`);
+
+      let errorMessage = "فشل في تحديث الحالة";
+
+      if (err.response) {
+        errorMessage += `: ${err.response.status} - ${err.response.data?.message || 'Unknown error'}`;
+      } else if (err.code === 'ERR_NETWORK' || err.message?.includes('Network Error') || err.message?.includes('CORS')) {
+        errorMessage = "خطأ في الاتصال بالخادم - يرجى التحقق من إعدادات CORS في الخادم";
+      } else if (err.code === 'ECONNABORTED') {
+        errorMessage = "انتهت مهلة الطلب - يرجى المحاولة مرة أخرى";
+      } else {
+        errorMessage += `: ${err.message}`;
+      }
+
+      setError(errorMessage);
       return false;
     }
   };
@@ -199,12 +226,13 @@ export default function LastPosts() {
     return total.toString();
   };
 
-  // Map API status to display status
+  // Map API status to display status - handle both UPPERCASE and lowercase
   const getDisplayStatus = (status) => {
-    switch (status) {
-      case "approved": return "accepted";
-      case "rejected": return "rejected";
-      case "pending": return "pending";
+    const statusNormalized = status.toUpperCase();
+    switch (statusNormalized) {
+      case "APPROVED": return "accepted";
+      case "REJECTED": return "rejected";
+      case "PENDING": return "pending";
       default: return "pending";
     }
   };
