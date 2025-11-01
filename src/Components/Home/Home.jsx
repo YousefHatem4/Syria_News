@@ -282,29 +282,7 @@ export default function Home() {
         }
     };
 
-    // Add this useEffect after your existing useEffects
-    // useEffect(() => {
-    //     const fetchArticles = async () => {
-    //         try {
-    //             console.log('Fetching articles...');
-    //             const response = await axios.get(`${BASE_URL}articles`, {
-    //                 headers: {
-    //                     Authorization: `Bearer ${userToken}`
-    //                 }
-    //             });
-    //             console.log('Articles API Response:', response.data);
-    //             console.log('Status Code:', response.status);
-    //         } catch (error) {
-    //             console.error('Error fetching articles:', error);
-    //             console.error('Error response:', error.response?.data);
-    //             console.error('Error status:', error.response?.status);
-    //         }
-    //     };
-
-    //     if (userToken) {
-    //         fetchArticles();
-    //     }
-    // }, [userToken]);
+   
 
 
     // Handle form submission
@@ -1015,7 +993,7 @@ export default function Home() {
                     </div>
                 </section>
 
-                {/* right section */}
+                {/* right section  latest post*/}
                 <section className='w-full max-w-[723px] h-auto md:h-[510px] rounded-[8px] bg-white shadow-[0_4px_4px_0_rgba(0,0,0,0.25)] mt-8 lg:mt-0'>
                     <img src="post.jpg" className='w-full h-[180px] md:h-[228px] flex-shrink-0 rounded-t-[8px] rounded-b-[0px] object-cover' alt="post_Photo" />
                     {/* card content */}

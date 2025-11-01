@@ -1,20 +1,10 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useContext } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faRetweet, faEye, faCheck, faXmark, faPenToSquare } from "@fortawesome/free-solid-svg-icons";
 import axios from 'axios';
+import { userContext } from '../Context/userContext';
 
-const BASE_URL = "http://newssyriabackend-newsyria.up.railway.app/api/v1/";
-
-// Add axios interceptor to handle CORS
-axios.interceptors.request.use(
-  config => {
-    config.headers['Content-Type'] = 'application/json';
-    return config;
-  },
-  error => {
-    return Promise.reject(error);
-  }
-);
+const BASE_URL = "https://newssyriabackend-newsyria.up.railway.app/api/v1/";
 
 export default function LastPosts() {
   // Pagination state
@@ -28,131 +18,124 @@ export default function LastPosts() {
 
   const postsPerPage = 10;
 
-  // Fetch posts from API
+  // Get user token from context
+  const { userToken } = useContext(userContext);
+
+  // Fetch posts from API with authentication
   const fetchPosts = async (page = 0, status = "approved") => {
     try {
       setLoading(true);
       setError(null);
 
+      console.log("Fetching posts with status:", status);
+      console.log("User token available:", !!userToken);
+
+      // Check if we have authentication token
+      if (!userToken) {
+        throw new Error("يجب تسجيل الدخول أولاً للوصول إلى المنشورات");
+      }
+
       const params = {
         page: page,
         size: postsPerPage,
-        sort: "desc",
-        status: status
+        status: status,
+        sort: 'desc'
       };
 
-      console.log("Fetching posts with params:", params);
+      console.log("API Request with params:", params);
+      console.log("Full URL:", `${BASE_URL}articles/status?page=${page}&size=${postsPerPage}&status=${status}&sort=desc`);
 
-      // Use a CORS proxy for development
-      const CORS_PROXY = "https://cors-anywhere.herokuapp.com/";
-      const apiUrl = `${BASE_URL}articles/status`;
-
-      const response = await axios.get(`${CORS_PROXY}${apiUrl}`, {
-        params,
-        timeout: 10000
+      const response = await axios.get(`${BASE_URL}articles/status`, {
+        params: params,
+        timeout: 10000,
+        headers: {
+          'Authorization': `Bearer ${userToken}`,
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+        }
       });
 
-      console.log("API Response:", response.data);
+      console.log("API Response received:", response.data);
 
-      if (response.data && response.data.content) {
-        setPosts(response.data.content);
-        setTotalPages(response.data.totalPages);
-        setTotalElements(response.data.totalElements);
+      if (response.data && Array.isArray(response.data.content)) {
+        // Filter posts client-side as well to ensure only matching status posts are shown
+        const filteredPosts = response.data.content.filter(post =>
+          post.status === status
+        );
+
+        console.log(`API returned ${response.data.content.length} posts, filtered to ${filteredPosts.length} posts with status: ${status}`);
+
+        setPosts(filteredPosts);
+        setTotalPages(response.data.totalPages || 1);
+        setTotalElements(filteredPosts.length); // Use filtered count for display
       } else {
-        setPosts([]);
-        setTotalPages(0);
-        setTotalElements(0);
+        throw new Error("Invalid response format from API");
       }
     } catch (err) {
       console.error("Error fetching posts:", err);
 
-      // Fallback to mock data if API fails
-      if (err.code === 'ERR_NETWORK' || err.response?.status === 403) {
-        setError("تعذر الاتصال بالخادم. يتم عرض بيانات تجريبية.");
-        // Use mock data as fallback
-        setPosts(getMockPosts());
-        setTotalPages(2);
-        setTotalElements(12);
+      let errorMessage = "فشل في تحميل البيانات";
+
+      if (err.response) {
+        const status = err.response.status;
+        const data = err.response.data;
+
+        console.log("Error response data:", data);
+
+        if (data && data.message === 'Access Denied') {
+          errorMessage = "غير مصرح بالوصول - يرجى التأكد من تسجيل الدخول";
+        } else if (status === 401) {
+          errorMessage = "انتهت صلاحية الجلسة - يرجى تسجيل الدخول مرة أخرى";
+        } else if (status === 403) {
+          errorMessage = "غير مصرح بالوصول إلى هذه البيانات";
+        } else if (status === 400) {
+          errorMessage = "طلب غير صحيح - يرجى المحاولة مرة أخرى";
+        } else if (status === 404) {
+          errorMessage = "لم يتم العثور على البيانات المطلوبة";
+        } else if (status === 500) {
+          errorMessage = "خطأ في الخادم - يرجى المحاولة لاحقاً";
+        } else {
+          errorMessage = `خطأ في الخادم (${status})`;
+        }
+
+        // Add server message if available
+        if (data && data.message && data.message !== 'Access Denied') {
+          errorMessage += `: ${data.message}`;
+        }
+      } else if (err.request) {
+        errorMessage = "لا يمكن الاتصال بالخادم - يرجى التحقق من اتصال الإنترنت";
       } else {
-        setError("فشل في تحميل البيانات. يرجى المحاولة مرة أخرى.");
-        setPosts([]);
+        errorMessage = err.message || "حدث خطأ غير متوقع";
       }
+
+      setError(errorMessage);
+      setPosts([]);
     } finally {
       setLoading(false);
     }
   };
 
-  // Mock data fallback
-  const getMockPosts = () => {
-    return [
-      {
-        id: "1",
-        header: "تطورات الأوضاع في المنطقة الشمالية",
-        createdAt: "2023-02-15",
-        status: "approved",
-        comments: [{}, {}, {}],
-        reactions: [{}]
-      },
-      {
-        id: "2",
-        header: "آخر الأخبار من العاصمة",
-        createdAt: "2023-02-16",
-        status: "pending",
-        comments: [{}, {}],
-        reactions: [{}, {}, {}]
-      },
-      {
-        id: "3",
-        header: "التحديثات الاقتصادية الجديدة",
-        createdAt: "2023-02-17",
-        status: "rejected",
-        comments: [{}],
-        reactions: [{}, {}]
-      },
-      {
-        id: "4",
-        header: "الأحداث الرياضية المهمة",
-        createdAt: "2023-02-18",
-        status: "pending",
-        comments: [{}, {}, {}, {}],
-        reactions: [{}]
-      },
-      {
-        id: "5",
-        header: "التطورات التكنولوجية الحديثة",
-        createdAt: "2023-02-19",
-        status: "approved",
-        comments: [{}],
-        reactions: []
-      },
-      {
-        id: "6",
-        header: "الأخبار الثقافية والفنية",
-        createdAt: "2023-02-20",
-        status: "pending",
-        comments: [],
-        reactions: [{}]
-      }
-    ];
-  };
-
   // Update post status
   const updatePostStatus = async (postId, status) => {
     try {
-      const params = {
-        status: status
-      };
-
       console.log("Updating post status:", { postId, status });
 
-      // Use CORS proxy for the update request as well
-      const CORS_PROXY = "https://cors-anywhere.herokuapp.com/";
-      const apiUrl = `${BASE_URL}articles/${postId}/review`;
+      if (!userToken) {
+        throw new Error("يجب تسجيل الدخول أولاً");
+      }
 
-      await axios.patch(`${CORS_PROXY}${apiUrl}`, null, {
-        params,
-        timeout: 10000
-      });
+      const response = await axios.patch(
+        `${BASE_URL}articles/${postId}/review?status=${status}`,
+        null,
+        {
+          timeout: 10000,
+          headers: {
+            'Authorization': `Bearer ${userToken}`,
+            'Accept': 'application/json',
+            'Content-Type': 'application/json',
+          }
+        }
+      );
 
       // Refresh the posts after status update
       fetchPosts(currentPage, filterStatus);
@@ -160,21 +143,21 @@ export default function LastPosts() {
       return true;
     } catch (err) {
       console.error("Error updating post status:", err);
-      // Even if API fails, update UI locally for better UX
-      return true;
+      setError(`فشل في تحديث الحالة: ${err.response?.data?.message || err.message}`);
+      return false;
     }
   };
 
   // Load posts when component mounts or when page/filter changes
   useEffect(() => {
     fetchPosts(currentPage, filterStatus);
-  }, [currentPage, filterStatus]);
+  }, [currentPage, filterStatus, userToken]);
 
   // Handle filter change
   const handleFilterChange = (e) => {
     const newStatus = e.target.value;
     setFilterStatus(newStatus);
-    setCurrentPage(0);
+    setCurrentPage(0); // Reset to first page when filter changes
   };
 
   // Change page
@@ -184,16 +167,20 @@ export default function LastPosts() {
   const formatDate = (dateString) => {
     try {
       const date = new Date(dateString);
-      const year = date.getFullYear();
-      const currentYear = new Date().getFullYear();
-      const yearDiff = currentYear - year;
+      const now = new Date();
+      const diffTime = Math.abs(now - date);
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      const diffMonths = Math.floor(diffDays / 30);
+      const diffYears = Math.floor(diffDays / 365);
 
-      if (yearDiff === 0) {
-        return "هذه السنة";
-      } else if (yearDiff === 1) {
-        return "منذ سنة";
+      if (diffYears > 0) {
+        return `منذ ${diffYears} سنة`;
+      } else if (diffMonths > 0) {
+        return `منذ ${diffMonths} شهر`;
+      } else if (diffDays > 0) {
+        return `منذ ${diffDays} يوم`;
       } else {
-        return `منذ ${yearDiff} سنوات`;
+        return "اليوم";
       }
     } catch (error) {
       return "تاريخ غير معروف";
@@ -255,8 +242,8 @@ export default function LastPosts() {
 
         /* Hide scrollbar for IE, Edge and Firefox */
         .hide-scrollbar {
-          -ms-overflow-style: none;  /* IE and Edge */
-          scrollbar-width: none;  /* Firefox */
+          -ms-overflow-style: none;
+          scrollbar-width: none;
         }
       `}
       </style>
@@ -272,9 +259,9 @@ export default function LastPosts() {
               onChange={handleFilterChange}
               className="w-[180px] h-[40px] px-3 rounded-[5px] bg-[#2D4639] border border-[#E9C882] text-[#E9C882] text-right font-[Cairo] text-[14px] focus:outline-none focus:ring-1 focus:ring-[#E9C882]"
             >
-              <option value="approved">قبول</option>
-              <option value="rejected">مرفوض</option>
-              <option value="pending">قيد المراجعه</option>
+              <option value="approved">المقبولة</option>
+              <option value="rejected">المرفوضة</option>
+              <option value="pending">قيد المراجعة</option>
             </select>
           </div>
 
@@ -286,6 +273,32 @@ export default function LastPosts() {
             <div className="w-[50px] md:w-[70px] absolute start-92 md:start-19 top-9 md:top-12 h-[2px] md:h-[3px] bg-gradient-to-r from-[#00844B] to-[#E9C882]"></div>
           </section>
         </div>
+
+        {/* Error message */}
+        {error && (
+          <div className="w-full p-4 rounded bg-red-900 border border-red-600">
+            <p className="text-red-200 text-sm text-center mb-2">
+              ⚠️ {error}
+            </p>
+            <div className="flex justify-center gap-2">
+              <button
+                onClick={() => fetchPosts(currentPage, filterStatus)}
+                className="px-3 py-1 bg-red-700 text-white text-sm rounded hover:bg-red-600"
+              >
+                إعادة المحاولة
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Authentication warning */}
+        {!userToken && !loading && (
+          <div className="w-full p-4 rounded bg-yellow-900 border border-yellow-600">
+            <p className="text-yellow-200 text-sm text-center">
+              🔐 يلزم تسجيل الدخول لعرض المنشورات
+            </p>
+          </div>
+        )}
 
         {/* main content */}
         <section className="w-full">
@@ -314,14 +327,17 @@ export default function LastPosts() {
               <div className="flex justify-center items-center h-32">
                 <p className="text-[#E9C882]">جاري التحميل...</p>
               </div>
-            ) : error ? (
-              <div className="flex flex-col justify-center items-center h-32">
-                <p className="text-red-400 text-sm mb-2">{error}</p>
-                <p className="text-[#E9C882] text-xs">يتم عرض بيانات تجريبية</p>
+            ) : !userToken ? (
+              <div className="flex justify-center items-center h-32">
+                <p className="text-[#E9C882]">يرجى تسجيل الدخول لعرض المنشورات</p>
               </div>
             ) : posts.length === 0 ? (
               <div className="flex justify-center items-center h-32">
-                <p className="text-[#E9C882]">لا توجد منشورات</p>
+                <p className="text-[#E9C882]">
+                  {filterStatus === "approved" && "لا توجد منشورات مقبولة"}
+                  {filterStatus === "rejected" && "لا توجد منشورات مرفوضة"}
+                  {filterStatus === "pending" && "لا توجد منشورات قيد المراجعة"}
+                </p>
               </div>
             ) : (
               posts.map((post) => (
@@ -332,6 +348,7 @@ export default function LastPosts() {
                   formatDate={formatDate}
                   calculateInteractions={calculateInteractions}
                   getDisplayStatus={getDisplayStatus}
+                  currentFilter={filterStatus}
                 />
               ))
             )}
@@ -339,15 +356,15 @@ export default function LastPosts() {
         </section>
 
         {/* Pagination */}
-        {!loading && totalPages > 1 && (
+        {!loading && userToken && totalPages > 1 && (
           <div className="flex gap-2 items-center justify-center mt-4">
             {/* Left arrow */}
             <button
               onClick={() => paginate(Math.max(0, currentPage - 1))}
               disabled={currentPage === 0}
               className={`flex w-[40px] h-[40px] justify-center items-center rounded-[5px] font-[Cairo] text-[16px] font-medium transition-all ${currentPage === 0
-                  ? "bg-gray-600 text-gray-400 cursor-not-allowed"
-                  : "bg-[rgba(45,70,57,0.40)] text-[#E9C882] hover:bg-[rgba(45,70,57,0.60)]"
+                ? "bg-gray-600 text-gray-400 cursor-not-allowed"
+                : "bg-[rgba(45,70,57,0.40)] text-[#E9C882] hover:bg-[rgba(45,70,57,0.60)]"
                 }`}
             >
               ←
@@ -359,8 +376,8 @@ export default function LastPosts() {
                 key={pageNumber}
                 onClick={() => paginate(pageNumber)}
                 className={`flex w-[40px] h-[40px] justify-center items-center rounded-[5px] font-[Cairo] text-[16px] font-medium transition-all ${currentPage === pageNumber
-                    ? "bg-[#00844B] text-white"
-                    : "bg-[rgba(45,70,57,0.40)] text-[#E9C882] hover:bg-[rgba(45,70,57,0.60)]"
+                  ? "bg-[#00844B] text-white"
+                  : "bg-[rgba(45,70,57,0.40)] text-[#E9C882] hover:bg-[rgba(45,70,57,0.60)]"
                   }`}
               >
                 {pageNumber + 1}
@@ -372,8 +389,8 @@ export default function LastPosts() {
               onClick={() => paginate(Math.min(totalPages - 1, currentPage + 1))}
               disabled={currentPage === totalPages - 1}
               className={`flex w-[40px] h-[40px] justify-center items-center rounded-[5px] font-[Cairo] text-[16px] font-medium transition-all ${currentPage === totalPages - 1
-                  ? "bg-gray-600 text-gray-400 cursor-not-allowed"
-                  : "bg-[rgba(45,70,57,0.40)] text-[#E9C882] hover:bg-[rgba(45,70,57,0.60)]"
+                ? "bg-gray-600 text-gray-400 cursor-not-allowed"
+                : "bg-[rgba(45,70,57,0.40)] text-[#E9C882] hover:bg-[rgba(45,70,57,0.60)]"
                 }`}
             >
               →
@@ -396,6 +413,32 @@ export default function LastPosts() {
             </section>
           </div>
 
+          {/* Error message */}
+          {error && (
+            <div className="w-full p-4 rounded bg-red-900 border border-red-600">
+              <p className="text-red-200 text-sm text-center mb-2">
+                ⚠️ {error}
+              </p>
+              <div className="flex justify-center gap-2">
+                <button
+                  onClick={() => fetchPosts(currentPage, filterStatus)}
+                  className="px-3 py-1 bg-red-700 text-white text-sm rounded hover:bg-red-600"
+                >
+                  إعادة المحاولة
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Authentication warning */}
+          {!userToken && !loading && (
+            <div className="w-full p-4 rounded bg-yellow-900 border border-yellow-600">
+              <p className="text-yellow-200 text-sm text-center">
+                🔐 يلزم تسجيل الدخول لعرض المنشورات
+              </p>
+            </div>
+          )}
+
           {/* Filter select box */}
           <div className="flex justify-start w-full">
             <select
@@ -403,9 +446,9 @@ export default function LastPosts() {
               onChange={handleFilterChange}
               className="w-[180px] h-[40px] px-3 rounded-[5px] bg-[#2D4639] border border-[#E9C882] text-[#E9C882] text-right font-[Cairo] text-[14px] focus:outline-none focus:ring-1 focus:ring-[#E9C882]"
             >
-              <option value="approved">قبول</option>
-              <option value="rejected">مرفوض</option>
-              <option value="pending">قيد المراجعه</option>
+              <option value="approved">المقبولة</option>
+              <option value="rejected">المرفوضة</option>
+              <option value="pending">قيد المراجعة</option>
             </select>
           </div>
         </div>
@@ -416,14 +459,17 @@ export default function LastPosts() {
             <div className="flex justify-center items-center h-32">
               <p className="text-[#E9C882]">جاري التحميل...</p>
             </div>
-          ) : error ? (
-            <div className="flex flex-col justify-center items-center h-32">
-              <p className="text-red-400 text-sm mb-2">{error}</p>
-              <p className="text-[#E9C882] text-xs">يتم عرض بيانات تجريبية</p>
+          ) : !userToken ? (
+            <div className="flex justify-center items-center h-32">
+              <p className="text-[#E9C882]">يرجى تسجيل الدخول لعرض المنشورات</p>
             </div>
           ) : posts.length === 0 ? (
             <div className="flex justify-center items-center h-32">
-              <p className="text-[#E9C882]">لا توجد منشورات</p>
+              <p className="text-[#E9C882]">
+                {filterStatus === "approved" && "لا توجد منشورات مقبولة"}
+                {filterStatus === "rejected" && "لا توجد منشورات مرفوضة"}
+                {filterStatus === "pending" && "لا توجد منشورات قيد المراجعة"}
+              </p>
             </div>
           ) : (
             posts.map((post) => (
@@ -434,21 +480,22 @@ export default function LastPosts() {
                 formatDate={formatDate}
                 calculateInteractions={calculateInteractions}
                 getDisplayStatus={getDisplayStatus}
+                currentFilter={filterStatus}
               />
             ))
           )}
         </div>
 
         {/* Pagination */}
-        {!loading && totalPages > 1 && (
+        {!loading && userToken && totalPages > 1 && (
           <div className="flex gap-2 items-center justify-center flex-wrap">
             {/* Left arrow */}
             <button
               onClick={() => paginate(Math.max(0, currentPage - 1))}
               disabled={currentPage === 0}
               className={`flex w-[36px] h-[36px] justify-center items-center rounded-[5px] font-[Cairo] text-[14px] font-medium transition-all ${currentPage === 0
-                  ? "bg-gray-600 text-gray-400 cursor-not-allowed"
-                  : "bg-[rgba(45,70,57,0.40)] text-[#E9C882] hover:bg-[rgba(45,70,57,0.60)]"
+                ? "bg-gray-600 text-gray-400 cursor-not-allowed"
+                : "bg-[rgba(45,70,57,0.40)] text-[#E9C882] hover:bg-[rgba(45,70,57,0.60)]"
                 }`}
             >
               ←
@@ -460,8 +507,8 @@ export default function LastPosts() {
                 key={pageNumber}
                 onClick={() => paginate(pageNumber)}
                 className={`flex w-[36px] h-[36px] justify-center items-center rounded-[5px] font-[Cairo] text-[14px] font-medium transition-all ${currentPage === pageNumber
-                    ? "bg-[#00844B] text-white"
-                    : "bg-[rgba(45,70,57,0.40)] text-[#E9C882] hover:bg-[rgba(45,70,57,0.60)]"
+                  ? "bg-[#00844B] text-white"
+                  : "bg-[rgba(45,70,57,0.40)] text-[#E9C882] hover:bg-[rgba(45,70,57,0.60)]"
                   }`}
               >
                 {pageNumber + 1}
@@ -473,8 +520,8 @@ export default function LastPosts() {
               onClick={() => paginate(Math.min(totalPages - 1, currentPage + 1))}
               disabled={currentPage === totalPages - 1}
               className={`flex w-[36px] h-[36px] justify-center items-center rounded-[5px] font-[Cairo] text-[14px] font-medium transition-all ${currentPage === totalPages - 1
-                  ? "bg-gray-600 text-gray-400 cursor-not-allowed"
-                  : "bg-[rgba(45,70,57,0.40)] text-[#E9C882] hover:bg-[rgba(45,70,57,0.60)]"
+                ? "bg-gray-600 text-gray-400 cursor-not-allowed"
+                : "bg-[rgba(45,70,57,0.40)] text-[#E9C882] hover:bg-[rgba(45,70,57,0.60)]"
                 }`}
             >
               →
@@ -487,7 +534,7 @@ export default function LastPosts() {
 }
 
 // Post Row Component for Large Screen
-function PostRow({ post, onStatusUpdate, formatDate, calculateInteractions, getDisplayStatus }) {
+function PostRow({ post, onStatusUpdate, formatDate, calculateInteractions, getDisplayStatus, currentFilter }) {
   const [status, setStatus] = useState(getDisplayStatus(post.status));
   const [buttonState, setButtonState] = useState("initial");
   const [hasMadeDecision, setHasMadeDecision] = useState(false);
@@ -528,18 +575,23 @@ function PostRow({ post, onStatusUpdate, formatDate, calculateInteractions, getD
 
   const interactionsCount = calculateInteractions(post);
 
+  // Show action buttons only for pending posts in the pending filter
+  const showActionButtons = currentFilter === "pending" && status === "pending";
+
   return (
     <section className="flex w-[770px] h-[89.5px] justify-end items-center shrink-0 mt-3">
       {/* btns */}
       <div className="flex w-[167.41px] pt-[26.5px] pr-[15px] pb-[27px] pl-[15px] flex-row-reverse gap-2 items-end shrink-0 self-stretch border-b border-[#EEE]">
         <div className="flex flex-row-reverse gap-2 -me-9 z-10">
-          {/* Swap button */}
-          <button
-            onClick={handleSwap}
-            className="flex w-[40px] cursor-pointer h-[36px] px-[7.176px] pt-[6.192px] pb-[5.808px] pl-[8.824px] justify-center items-center shrink-0 rounded-[5px] bg-[#00844B]"
-          >
-            <FontAwesomeIcon className="text-[#FFFFFF]" icon={faRetweet} />
-          </button>
+          {/* Swap button - show only for pending posts in pending filter */}
+          {showActionButtons && (
+            <button
+              onClick={handleSwap}
+              className="flex w-[40px] cursor-pointer h-[36px] px-[7.176px] pt-[6.192px] pb-[5.808px] pl-[8.824px] justify-center items-center shrink-0 rounded-[5px] bg-[#00844B]"
+            >
+              <FontAwesomeIcon className="text-[#FFFFFF]" icon={faRetweet} />
+            </button>
+          )}
 
           {/* For approved/rejected status - show View button */}
           {(status === "accepted" || status === "rejected") && (
@@ -549,7 +601,7 @@ function PostRow({ post, onStatusUpdate, formatDate, calculateInteractions, getD
           )}
 
           {/* For pending status - show Accept/Reject buttons or View button based on state */}
-          {status === "pending" && (
+          {showActionButtons && (
             <>
               {/* Initial state - Accept/Reject buttons */}
               {buttonState === "initial" && !hasMadeDecision && (
@@ -588,6 +640,13 @@ function PostRow({ post, onStatusUpdate, formatDate, calculateInteractions, getD
                 </button>
               )}
             </>
+          )}
+
+          {/* For pending posts in non-pending filters, show View button */}
+          {status === "pending" && currentFilter !== "pending" && (
+            <button className="flex w-[67.89px] cursor-pointer h-[36px] pt-[6px] pr-[11.41px] pb-[6px] pl-[12px] justify-center items-center gap-1 rounded-[5px] bg-[#00844B] text-white text-center font-[cairo] text-[12.8px] font-normal leading-normal">
+              عرض <FontAwesomeIcon className="text-[#FFFFFF]" icon={faEye} />
+            </button>
           )}
         </div>
       </div>
@@ -631,7 +690,7 @@ function PostRow({ post, onStatusUpdate, formatDate, calculateInteractions, getD
 }
 
 // Post Card Component for Mobile/Tablet
-function PostCardMobile({ post, onStatusUpdate, formatDate, calculateInteractions, getDisplayStatus }) {
+function PostCardMobile({ post, onStatusUpdate, formatDate, calculateInteractions, getDisplayStatus, currentFilter }) {
   const [status, setStatus] = useState(getDisplayStatus(post.status));
   const [buttonState, setButtonState] = useState("initial");
   const [hasMadeDecision, setHasMadeDecision] = useState(false);
@@ -672,6 +731,9 @@ function PostCardMobile({ post, onStatusUpdate, formatDate, calculateInteraction
 
   const interactionsCount = calculateInteractions(post);
 
+  // Show action buttons only for pending posts in the pending filter
+  const showActionButtons = currentFilter === "pending" && status === "pending";
+
   return (
     <div className="w-full rounded-lg bg-[#2D4639] p-4">
       {/* post title and date */}
@@ -709,13 +771,15 @@ function PostCardMobile({ post, onStatusUpdate, formatDate, calculateInteraction
 
       {/* actions */}
       <div className="flex flex-row-reverse justify-start items-center gap-2 pt-4">
-        {/* Swap button */}
-        <button
-          onClick={handleSwap}
-          className="flex w-10 cursor-pointer h-9 justify-center items-center rounded-[5px] bg-[#00844B]"
-        >
-          <FontAwesomeIcon className="text-white" icon={faRetweet} />
-        </button>
+        {/* Swap button - show only for pending posts in pending filter */}
+        {showActionButtons && (
+          <button
+            onClick={handleSwap}
+            className="flex w-10 cursor-pointer h-9 justify-center items-center rounded-[5px] bg-[#00844B]"
+          >
+            <FontAwesomeIcon className="text-white" icon={faRetweet} />
+          </button>
+        )}
 
         {/* For approved/rejected status - show View button */}
         {(status === "accepted" || status === "rejected") && (
@@ -725,7 +789,7 @@ function PostCardMobile({ post, onStatusUpdate, formatDate, calculateInteraction
         )}
 
         {/* For pending status - show Accept/Reject buttons or View button based on state */}
-        {status === "pending" && (
+        {showActionButtons && (
           <>
             {/* Initial state - Accept/Reject buttons */}
             {buttonState === "initial" && !hasMadeDecision && (
@@ -764,6 +828,13 @@ function PostCardMobile({ post, onStatusUpdate, formatDate, calculateInteraction
               </button>
             )}
           </>
+        )}
+
+        {/* For pending posts in non-pending filters, show View button */}
+        {status === "pending" && currentFilter !== "pending" && (
+          <button className="flex h-9 cursor-pointer px-3 justify-center items-center gap-1 rounded-[5px] bg-[#00844B] text-white text-center font-[cairo] text-xs">
+            عرض <FontAwesomeIcon className="text-white" icon={faEye} />
+          </button>
         )}
       </div>
     </div>
