@@ -1158,17 +1158,19 @@ export default function Home() {
                                     </h1>
                                 </div>
 
-                                <h1 className='text-black text-right font-poppins text-[18px] md:text-[20px] font-semibold leading-normal'>
+                                {/* Fixed header with text wrapping */}
+                                <h1 className='text-black text-right font-poppins text-[18px] md:text-[20px] font-semibold leading-normal break-words overflow-hidden word-wrap break-word'>
                                     {section1Posts[currentSection1Index].header}
                                 </h1>
 
-                                <p className='text-[#636262] text-right font-tajawal text-[14px] font-normal leading-normal'>
+                                {/* Fixed bio with text wrapping */}
+                                <p className='text-[#636262] text-right font-tajawal text-[14px] font-normal leading-normal break-words overflow-hidden word-wrap break-word max-h-[72px] overflow-y-auto'>
                                     {section1Posts[currentSection1Index].bio || 'لا توجد نبذة متاحة'}
                                 </p>
 
                                 <div className='flex items-center justify-between flex-col-reverse md:flex-row gap-4 md:gap-0 md:ms-10'>
                                     <Link
-                                                to={`/newsdetails/${section1Posts[currentSection1Index].id}`}
+                                        to={`/newsdetails/${section1Posts[currentSection1Index].id}`}
                                         className='flex cursor-pointer px-[10px] py-[8px] justify-center items-center gap-2.5 rounded-[25px] border border-black/13 text-black text-right font-poppins text-[12px] font-normal leading-normal'
                                     >
                                         .....إقراء المزيد
@@ -1310,9 +1312,9 @@ export default function Home() {
                         <>
                             <section className='flex flex-col lg:flex-row justify-between items-start gap-6 lg:gap-10 mt-6 lg:mt-11'>
                                 {/* Column 1 - First 2 posts */}
-                                <div className='flex flex-col space-y-5 lg:space-y-10 w-full lg:w-[426px]'>
+                                <div className='flex flex-col space-y-5 lg:space-y-5 w-full lg:w-[426px]'>
                                     {section2Posts.slice(0, 2).map((post) => (
-                                        <div key={post.id} className="lg:w-[426px] h-[260px] md:h-[340px] rounded-[8px] bg-white shadow-[0_4px_8px_rgba(0,0,0,0.25)] lg:shadow-[0_8px_4px_rgba(0,0,0,0.41)] flex flex-col">
+                                        <div key={post.id} className="lg:w-[426px] h-[260px] md:h-[360px] rounded-[8px] bg-white shadow-[0_4px_8px_rgba(0,0,0,0.25)] lg:shadow-[0_8px_4px_rgba(0,0,0,0.41)] flex flex-col">
                                             <div className="relative">
                                                 {imageLoadingStates[post.id] && (
                                                     <div className="absolute inset-0 flex items-center justify-center bg-gray-200 rounded-t-[8px]">
@@ -1329,15 +1331,17 @@ export default function Home() {
                                             </div>
 
                                             <div className="flex w-full px-4 flex-col items-end gap-3 lg:gap-5 mt-1 lg:mt-4">
-                                                <div className='flex items-center gap-2'>
-                                                    <h1 className='text-black font-[Poppins] text-[16px] lg:text-[20px] not-italic font-semibold leading-normal'>
+                                                <div className='flex items-center gap-2 w-full justify-end'>
+                                                    {/* Fixed header with text wrapping */}
+                                                    <h1 className='text-black font-[Poppins] text-[16px] lg:text-[20px] not-italic font-semibold leading-normal break-words overflow-hidden word-wrap break-word text-right max-w-[90%]'>
                                                         {post.header}
                                                     </h1>
-                                                    <span className='w-[3px] lg:w-[5px] h-[14px] lg:h-[19px] rounded-[1px] bg-[var(--dark-green-2-d-4639,#2D4639)]'></span>
+                                                    <span className='w-[3px] lg:w-[5px] h-[14px] lg:h-[19px] rounded-[1px] bg-[var(--dark-green-2-d-4639,#2D4639)] flex-shrink-0'></span>
                                                 </div>
 
-                                                <div>
-                                                    <p className='text-black text-right font-[Tajawal] text-[12px] lg:text-sm not-italic font-normal leading-normal line-clamp-2'>
+                                                <div className='w-full'>
+                                                    {/* Fixed bio with text wrapping */}
+                                                    <p className='text-black text-right font-[Tajawal] text-[12px] lg:text-sm not-italic font-normal leading-normal break-words overflow-hidden word-wrap break-word max-h-[48px] overflow-y-auto'>
                                                         {post.bio}
                                                     </p>
                                                 </div>
@@ -1361,9 +1365,9 @@ export default function Home() {
                                 </div>
 
                                 {/* Column 2 - Last 2 posts */}
-                                <div className='flex flex-col space-y-5 lg:space-y-10 w-full lg:w-[426px]'>
+                                        <div className='flex flex-col space-y-5 lg:space-y-5 w-full lg:w-[426px]'>
                                     {section2Posts.slice(2, 4).map((post) => (
-                                        <div key={post.id} className="lg:w-[426px] h-[260px] md:h-[340px] rounded-[8px] bg-white shadow-[0_4px_8px_rgba(0,0,0,0.25)] lg:shadow-[0_8px_4px_rgba(0,0,0,0.41)] flex flex-col">
+                                        <div key={post.id} className="lg:w-[426px] h-[260px] md:h-[360px] rounded-[8px] bg-white shadow-[0_4px_8px_rgba(0,0,0,0.25)] lg:shadow-[0_8px_4px_rgba(0,0,0,0.41)] flex flex-col">
                                             <div className="relative">
                                                 {imageLoadingStates[post.id] && (
                                                     <div className="absolute inset-0 flex items-center justify-center bg-gray-200 rounded-t-[8px]">
@@ -1380,15 +1384,17 @@ export default function Home() {
                                             </div>
 
                                             <div className="flex w-full px-4 flex-col items-end gap-3 lg:gap-5 mt-1 lg:mt-4">
-                                                <div className='flex items-center gap-2'>
-                                                    <h1 className='text-black font-[Poppins] text-[16px] lg:text-[20px] not-italic font-semibold leading-normal'>
+                                                <div className='flex items-center gap-2 w-full justify-end'>
+                                                    {/* Fixed header with text wrapping */}
+                                                    <h1 className='text-black font-[Poppins] text-[16px] lg:text-[20px] not-italic font-semibold leading-normal break-words overflow-hidden word-wrap break-word text-right max-w-[90%]'>
                                                         {post.header}
                                                     </h1>
-                                                    <span className='w-[3px] lg:w-[5px] h-[14px] lg:h-[19px] rounded-[1px] bg-[var(--dark-green-2-d-4639,#2D4639)]'></span>
+                                                    <span className='w-[3px] lg:w-[5px] h-[14px] lg:h-[19px] rounded-[1px] bg-[var(--dark-green-2-d-4639,#2D4639)] flex-shrink-0'></span>
                                                 </div>
 
-                                                <div>
-                                                    <p className='text-black text-right font-[Tajawal] text-[12px] lg:text-sm not-italic font-normal leading-normal line-clamp-2'>
+                                                <div className='w-full'>
+                                                    {/* Fixed bio with text wrapping */}
+                                                    <p className='text-black text-right font-[Tajawal] text-[12px] lg:text-sm not-italic font-normal leading-normal break-words overflow-hidden word-wrap break-word max-h-[48px] overflow-y-auto'>
                                                         {post.bio}
                                                     </p>
                                                 </div>

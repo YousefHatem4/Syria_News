@@ -181,28 +181,32 @@ export default function NewsDetails() {
         }
     };
 
-    // Fetch related posts by category
+    // Fetch related posts by category - FIXED VERSION
     const fetchRelatedPosts = async (categoryName, page = 0) => {
         try {
             setRelatedLoading(true);
 
-            // Build filter object properly
+            // Build filter object with the exact structure the API expects
             const filter = {
                 categoryName: categoryName,
                 status: 'approved'
             };
 
-            const response = await axios.get(`${BASE_URL}articles/filter`, {
-                params: {
-                    filter: JSON.stringify(filter),
-                    page: page,
-                    size: 10
-                },
+           
+
+            // Option 2: If the API requires the exact object structure, send it as form data
+            const formData = new FormData();
+            formData.append('categoryName', categoryName);
+            formData.append('status', 'approved');
+            formData.append('page', page);
+            formData.append('size', 10);
+
+            const response = await axios.post(`${BASE_URL}articles/filter`, formData, {
                 headers: userToken ? {
                     'Authorization': `Bearer ${userToken}`,
-                    'Accept': 'application/json',
+                    'Content-Type': 'multipart/form-data'
                 } : {
-                    'Accept': 'application/json',
+                    'Content-Type': 'multipart/form-data'
                 }
             });
 
@@ -217,10 +221,12 @@ export default function NewsDetails() {
         } catch (err) {
             console.error('Error fetching related posts:', err);
             // More specific error handling
-            if (err.response?.status === 404) {
+            if (err.response?.status === 400) {
+                console.log('Bad request - check filter parameters');
+            } else if (err.response?.status === 404) {
                 console.log('No related posts found for this category');
-                setRelatedPosts([]);
             }
+            setRelatedPosts([]);
         } finally {
             setRelatedLoading(false);
         }
@@ -390,7 +396,7 @@ export default function NewsDetails() {
     bg-[linear-gradient(151deg,#2D4639_-1.74%,#1B1D1E_105.33%)] 
     shadow-[0_25px_50px_0_rgba(0,132,75,0.25),0_0_0_0_rgba(233,200,130,0.25)] 
     backdrop-blur-[5px] mt-32 sm:mt-40 md:mt-48 lg:mt-52 xl:mt-55'>
-                    <img src={article.imageUrl || "post_image_2.jpg"} className='h-[200px] sm:h-[250px] md:h-[300px] lg:h-[350px] xl:h-[372px] w-full self-stretch rounded-t-[15px] sm:rounded-t-[20px] object-cover' alt={article.header} />
+                    <img src={article.imageUrl || "post_image_2.jpg"} className='h-[200px] sm:h-[250px] md:h-[300px] lg:h-[350px] xl:h-[372px] w-full self-stretch rounded-t-[15px] sm:rounded-t-[20px] object-cover ' alt={article.header} />
 
                     {/* content section 1*/}
                     <div className='p-4 sm:p-5 md:p-6 lg:p-5 flex flex-col items-end gap-4 sm:gap-5 md:gap-6 lg:gap-7'>
@@ -606,7 +612,7 @@ export default function NewsDetails() {
                             )}
                         </div>
                     </div>
-                    {/* posts that related to that post */}
+                  
                     <section className='px-4 sm:px-6 md:px-8 lg:px-10 mt-8 sm:mt-9 md:mt-10'>
                         {/* title */}
                         <div className='flex flex-col items-end'>
@@ -623,26 +629,53 @@ export default function NewsDetails() {
                             <>
                                 <section className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8 lg:gap-7 mt-6 sm:mt-8 md:mt-10'>
                                     {relatedPosts.map((post) => (
-                                        <section key={post.id} className='w-full max-w-[500px] md:max-w-[423px] h-auto md:h-[550px] rounded-[8px] bg-white shadow-[0_4px_4px_0_rgba(0,0,0,0.25)] mx-auto'>
-                                            <img src={post.imageUrl || "post.jpg"} className='w-full h-[180px] md:h-[228px] flex-shrink-0 rounded-t-[8px] rounded-b-[0px] object-cover' alt="post_Photo" />
-                                            <div className='flex-col p-4 flex gap-4 sm:gap-5 md:gap-6'>
-                                                <div className='flex items-center justify-end gap-4'>
-                                                    <p className='text-[#8A8A8A] text-right font-[poppins] text-[12px] font-normal leading-normal'>{formatDate(post.createdAt)}</p>
-                                                    <h1 className='flex w-[87px] px-[6px] py-[2px] justify-center items-center gap-2 rounded-[28px] bg-[#00844B] text-white text-[14px] md:text-[16px] font-[tajawal] font-bold leading-normal text-right'>
-                                                        {post.category?.nameAr || 'عاجل'}
+                                        <section key={post.id} className='w-full max-w-[500px] md:max-w-[423px] h-auto md:h-[400px] rounded-[8px] bg-white shadow-[0_4px_4px_0_rgba(0,0,0,0.25)] mx-auto flex flex-col'>
+                                            {/* Image container with fixed height */}
+                                            <div className='w-full h-[150px] md:h-[180px] flex-shrink-0'>
+                                                <img
+                                                    src={post.imageUrl || "post.jpg"}
+                                                    className='w-full h-full rounded-t-[8px] object-cover'
+                                                    alt={post.header || "صورة الخبر"}
+                                                 
+                                                />
+                                            </div>
+
+                                            {/* Content container with reduced padding and optimized spacing */}
+                                            <div className='flex flex-col flex-1 p-3 sm:p-4 gap-3 sm:gap-4'>
+                                                <div className='flex items-center justify-end gap-3'>
+                                                    <p className='text-[#8A8A8A] text-right font-[poppins] text-[11px] sm:text-[12px] font-normal leading-normal'>
+                                                        {formatDate(post.createdAt)}
+                                                    </p>
+                                                    <h1 className='flex w-[70px] sm:w-[87px] px-[6px] py-[2px] justify-center items-center gap-2 rounded-[28px] bg-[#00844B] text-white text-[12px] sm:text-[14px] font-[tajawal] font-bold leading-normal text-right'>
+                                                        {'عاجل'}
                                                     </h1>
                                                 </div>
-                                                <h1 className='text-black text-right font-poppins text-[16px] sm:text-[17px] md:text-[18px] lg:text-[20px] font-semibold leading-normal line-clamp-2'>
+
+                                                <h1 className='text-black text-right font-poppins text-[15px] sm:text-[16px] md:text-[17px] font-semibold leading-[1.4] line-clamp-2 min-h-[44px]'>
                                                     {post.header}
                                                 </h1>
-                                                <p className='text-[#636262] text-right font-tajawal text-[13px] sm:text-[13.5px] md:text-[14px] font-normal leading-normal line-clamp-3'>
+
+                                                <p className='text-[#636262] text-right font-tajawal text-[12px] sm:text-[13px] font-normal leading-[1.5] line-clamp-3 flex-1'>
                                                     {post.bio || 'لا توجد نبذة متاحة'}
                                                 </p>
-                                                <div className='flex items-center justify-between flex-col-reverse md:flex-row gap-4 md:gap-0 '>
-                                                    <Link to={`/newsdetails/${post.id}`} className='flex cursor-pointer px-[10px] py-[8px] justify-center items-center gap-2.5 rounded-[25px] border border-black/13 text-black text-right font-poppins text-[12px] font-normal leading-normal transition-all duration-300'>.....إقراء المزيد</Link>
-                                                    <div className='flex items-center gap-4'>
-                                                        <h1 className='text-black text-right font-poppins text-[12px] font-normal leading-normal'>{post.publisher?.username || 'مجهول'}</h1>
-                                                        <img src={post.publisher?.imageUrl || "profile.jpg"} className='w-[41px] h-[41px] rounded-[41px] object-cover' alt="" />
+
+                                                <div className='flex items-center justify-between flex-col-reverse sm:flex-row gap-3 sm:gap-0 mt-auto pt-2'>
+                                                    <Link
+                                                        to={`/newsdetails/${post.id}`}
+                                                        className='flex cursor-pointer px-[8px] py-[6px] justify-center items-center gap-2.5 rounded-[25px] border border-black/13 text-black text-right font-poppins text-[11px] sm:text-[12px] font-normal leading-normal transition-all duration-300 hover:bg-[#00844B] hover:text-white hover:border-[#00844B]'
+                                                    >
+                                                        .....إقراء المزيد
+                                                    </Link>
+                                                    <div className='flex items-center gap-3'>
+                                                        <h1 className='text-black text-right font-poppins text-[11px] sm:text-[12px] font-normal leading-normal'>
+                                                            {post.publisher?.username || 'مجهول'}
+                                                        </h1>
+                                                        <img
+                                                            src={post.publisher?.imageUrl || "profile.jpg"}
+                                                            className='w-[35px] h-[35px] sm:w-[41px] sm:h-[41px] rounded-full object-cover'
+                                                            alt={post.publisher?.username || "صورة الناشر"}
+                                                            
+                                                        />
                                                     </div>
                                                 </div>
                                             </div>
