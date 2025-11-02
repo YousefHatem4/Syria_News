@@ -63,6 +63,16 @@ export default function Home() {
         { id: 8, image: "morepost-3.png", title: "اشترك في النشرة الإخبارية", content: "أخبار وتحليلات خبراء لكل جدول. احصل على إصدارات الصباح والمساء من نشرتنا الإخبارية الرئيسية في بريدك الإلكتروني" }
     ];
 
+    // Category images mapping - maintain existing images by index
+    const categoryImages = [
+        "card-1.png",
+        "card-2.png",
+        "card-3.png",
+        "card-4.png",
+        "card-5.png",
+        "card-6.png"
+    ];
+
     // Fetch Section 1 Posts (Latest Posts - multiple for rotation)
     const fetchSection1Posts = async () => {
         try {
@@ -143,6 +153,28 @@ export default function Home() {
             setSection2Error('فشل في تحميل المنشورات');
         } finally {
             setSection2Loading(false);
+        }
+    };
+
+    // Fetch categories from API
+    const fetchCategories = async () => {
+        try {
+            const response = await axios.get(`${BASE_URL}categories`);
+            if (response.data && Array.isArray(response.data)) {
+                setCategories(response.data);
+                if (response.data.length > 0) {
+                    setSelectedCategory(response.data[0].name);
+                }
+            }
+        } catch (error) {
+            console.error('Error fetching categories:', error);
+            // Fallback to default categories if API fails
+            setCategories([
+                { name: 'الفنون', nameAr: 'الفنون', description: 'Arts', descriptionAr: 'الفنون' },
+                { name: 'الرياضة', nameAr: 'الرياضة', description: 'Sports', descriptionAr: 'الرياضة' },
+                { name: 'الاقتصاد', nameAr: 'الاقتصاد', description: 'Economy', descriptionAr: 'الاقتصاد' },
+                { name: 'السياسة', nameAr: 'السياسة', description: 'Politics', descriptionAr: 'السياسة' },
+            ]);
         }
     };
 
@@ -227,27 +259,6 @@ export default function Home() {
         }
 
         return buttons;
-    };
-
-    // Fetch categories from API
-    const fetchCategories = async () => {
-        try {
-            const response = await axios.get(`${BASE_URL}categories`);
-            if (response.data && Array.isArray(response.data)) {
-                setCategories(response.data);
-                if (response.data.length > 0) {
-                    setSelectedCategory(response.data[0].name);
-                }
-            }
-        } catch (error) {
-            console.error('Error fetching categories:', error);
-            setCategories([
-                { name: 'الفنون', nameAr: 'الفنون', description: 'Arts', descriptionAr: 'الفنون' },
-                { name: 'الرياضة', nameAr: 'الرياضة', description: 'Sports', descriptionAr: 'الرياضة' },
-                { name: 'الاقتصاد', nameAr: 'الاقتصاد', description: 'Economy', descriptionAr: 'الاقتصاد' },
-                { name: 'السياسة', nameAr: 'السياسة', description: 'Politics', descriptionAr: 'السياسة' },
-            ]);
-        }
     };
 
     // Handle next slide
@@ -469,6 +480,11 @@ export default function Home() {
         if (currentStep > 1) {
             setCurrentStep(currentStep - 1);
         }
+    };
+
+    // Get category image by index (to maintain existing images)
+    const getCategoryImage = (index) => {
+        return categoryImages[index % categoryImages.length];
     };
 
     return (
@@ -1197,95 +1213,41 @@ export default function Home() {
                 {/* left section */}
                 <section className='flex flex-col w-full lg:w-[401px] items-end gap-[25px] lg:gap-[43px]'>
                     <div className='flex gap-2'>
-                        <h1 className='text-black font-[tajawal] text-[24px] lg:text-[28px] font-bold leading-normal'>أختارنا لكم </h1>
+                        <h1 className='text-black font-[tajawal] text-[24px] lg:text-[28px] font-bold leading-normal'>فئة المنشورات </h1>
                         <div className='w-[4px] lg:w-[5px] h-[32px] lg:h-[42px] rounded-[1px] bg-[#2D4639]'></div>
                     </div>
 
                     <section className='flex flex-col justify-end items-center self-stretch p-[15px_10px_16px_20px] lg:p-[21px_10px_16px_28px] rounded-[8px] bg-white shadow-[0_4px_4px_0_rgba(0,0,0,0.25)]'>
-                        {/* card 1 */}
-                        <div className='flex items-center gap-4 lg:gap-5'>
-                            <div className='flex flex-col w-[65%] lg:w-[240px] items-end gap-[12px] lg:gap-[18px]'>
-                                <div className='flex gap-2'>
-                                    <h1 className='text-black font-[tajawal] text-[12px] lg:text-[14px] font-bold leading-normal'>رياضه</h1>
-                                    <div className='w-[3px] lg:w-[5px] h-[18px] lg:h-[24px] rounded-[1px] bg-[#2D4639]'></div>
+                        {/* Render categories from API */}
+                        {categories.slice(0, 6).map((category, index) => (
+                            <React.Fragment key={index}>
+                                <div className='flex items-center gap-4 lg:gap-5'>
+                                    <div className='flex flex-col w-[65%] lg:w-[240px] items-end gap-[12px] lg:gap-[18px]'>
+                                        {/* title */}
+                                        <div className='flex gap-2'>
+                                            <h1 className='text-black font-[tajawal] text-[12px] lg:text-[14px] font-bold leading-normal'>
+                                                {category.nameAr || category.name}
+                                            </h1>
+                                            <div className='w-[3px] lg:w-[5px] h-[18px] lg:h-[24px] rounded-[1px] bg-[#2D4639]'></div>
+                                        </div>
+                                        {/* description */}
+                                        <p className='text-black text-right font-poppins text-[11px] lg:text-[12px] font-normal leading-normal'>
+                                            {category.descriptionAr || category.description || `وصف ${category.nameAr || category.name}`}
+                                        </p>
+                                    </div>
+                                    <div className='w-[35%] lg:w-auto'>
+                                        <img
+                                            src={getCategoryImage(index)}
+                                            className='w-full lg:w-[136px] h-[70px] lg:h-[80px] rounded-[4px] object-cover'
+                                            alt={`${category.nameAr || category.name} photo`}
+                                        />
+                                    </div>
                                 </div>
-                                <p className='text-black text-right font-poppins text-[11px] lg:text-[12px] font-normal leading-normal'>فوز منتخب البرتغال بلقب اخر بمساعدة الدون</p>
-                            </div>
-                            <div className='w-[35%] lg:w-auto'>
-                                <img src="card-1.png" className='w-full lg:w-[136px] h-[70px] lg:h-[80px] rounded-[4px] object-cover' alt="sport photo" />
-                            </div>
-                        </div>
-                        <div className='w-full lg:w-[316px] h-[1px] bg-black/15 mt-4 lg:mt-6'></div>
-
-                        {/* cards 2-6 remain the same */}
-                        <div className='flex items-center gap-4 lg:gap-5 mt-4 lg:mt-5'>
-                            <div className='flex flex-col w-[65%] lg:w-[240px] items-end gap-[12px] lg:gap-[18px]'>
-                                <div className='flex gap-2'>
-                                    <h1 className='text-black font-[tajawal] text-[12px] lg:text-[14px] font-bold leading-normal'>اقتصاد</h1>
-                                    <div className='w-[3px] lg:w-[5px] h-[18px] lg:h-[24px] rounded-[1px] bg-[#2D4639]'></div>
-                                </div>
-                                <p className='text-black text-right font-poppins text-[11px] lg:text-[12px] font-normal leading-normal'>فوز منتخب البرتغال بلقب اخر بمساعدة الدون</p>
-                            </div>
-                            <div className='w-[35%] lg:w-auto'>
-                                <img src="card-2.png" className='w-full lg:w-[136px] h-[70px] lg:h-[80px] rounded-[4px] object-cover' alt="sport photo" />
-                            </div>
-                        </div>
-                        <div className='w-full lg:w-[316px] h-[1px] bg-black/15 mt-4 lg:mt-6'></div>
-
-                        <div className='flex items-center gap-4 lg:gap-5 mt-4 lg:mt-5'>
-                            <div className='flex flex-col w-[65%] lg:w-[240px] items-end gap-[12px] lg:gap-[18px]'>
-                                <div className='flex gap-2'>
-                                    <h1 className='text-black font-[tajawal] text-[12px] lg:text-[14px] font-bold leading-normal'>سياسه</h1>
-                                    <div className='w-[3px] lg:w-[5px] h-[18px] lg:h-[24px] rounded-[1px] bg-[#2D4639]'></div>
-                                </div>
-                                <p className='text-black text-right font-poppins text-[11px] lg:text-[12px] font-normal leading-normal'>فوز منتخب البرتغال بلقب اخر بمساعدة الدون</p>
-                            </div>
-                            <div className='w-[35%] lg:w-auto'>
-                                <img src="card-3.png" className='w-full lg:w-[136px] h-[70px] lg:h-[80px] rounded-[4px] object-cover' alt="sport photo" />
-                            </div>
-                        </div>
-                        <div className='w-full lg:w-[316px] h-[1px] bg-black/15 mt-4 lg:mt-6'></div>
-
-                        <div className='flex items-center gap-4 lg:gap-5 mt-4 lg:mt-5'>
-                            <div className='flex flex-col w-[65%] lg:w-[240px] items-end gap-[12px] lg:gap-[18px]'>
-                                <div className='flex gap-2'>
-                                    <h1 className='text-black font-[tajawal] text-[12px] lg:text-[14px] font-bold leading-normal'>علمي</h1>
-                                    <div className='w-[3px] lg:w-[5px] h-[18px] lg:h-[24px] rounded-[1px] bg-[#2D4639]'></div>
-                                </div>
-                                <p className='text-black text-right font-poppins text-[11px] lg:text-[12px] font-normal leading-normal'>فوز منتخب البرتغال بلقب اخر بمساعدة الدون</p>
-                            </div>
-                            <div className='w-[35%] lg:w-auto'>
-                                <img src="card-4.png" className='w-full lg:w-[136px] h-[70px] lg:h-[80px] rounded-[4px] object-cover' alt="sport photo" />
-                            </div>
-                        </div>
-                        <div className='w-full lg:w-[316px] h-[1px] bg-black/15 mt-4 lg:mt-6'></div>
-
-                        <div className='flex items-center gap-4 lg:gap-5 mt-4 lg:mt-5'>
-                            <div className='flex flex-col w-[65%] lg:w-[240px] items-end gap-[12px] lg:gap-[18px]'>
-                                <div className='flex gap-2'>
-                                    <h1 className='text-black font-[tajawal] text-[12px] lg:text-[14px] font-bold leading-normal'>رياضه</h1>
-                                    <div className='w-[3px] lg:w-[5px] h-[18px] lg:h-[24px] rounded-[1px] bg-[#2D4639]'></div>
-                                </div>
-                                <p className='text-black text-right font-poppins text-[11px] lg:text-[12px] font-normal leading-normal'>فوز منتخب البرتغال بلقب اخر بمساعدة الدون</p>
-                            </div>
-                            <div className='w-[35%] lg:w-auto'>
-                                <img src="card-5.png" className='w-full lg:w-[136px] h-[70px] lg:h-[80px] rounded-[4px] object-cover' alt="sport photo" />
-                            </div>
-                        </div>
-                        <div className='w-full lg:w-[316px] h-[1px] bg-black/15 mt-4 lg:mt-6'></div>
-
-                        <div className='flex items-center gap-4 lg:gap-5 mt-4 lg:mt-5'>
-                            <div className='flex flex-col w-[65%] lg:w-[240px] items-end gap-[12px] lg:gap-[18px]'>
-                                <div className='flex gap-2'>
-                                    <h1 className='text-black font-[tajawal] text-[12px] lg:text-[14px] font-bold leading-normal'>عالم</h1>
-                                    <div className='w-[3px] lg:w-[5px] h-[18px] lg:h-[24px] rounded-[1px] bg-[#2D4639]'></div>
-                                </div>
-                                <p className='text-black text-right font-poppins text-[11px] lg:text-[12px] font-normal leading-normal'>فوز منتخب البرتغال بلقب اخر بمساعدة الدون</p>
-                            </div>
-                            <div className='w-[35%] lg:w-auto'>
-                                <img src="card-6.png" className='w-full lg:w-[136px] h-[70px] lg:h-[80px] rounded-[4px] object-cover' alt="sport photo" />
-                            </div>
-                        </div>
+                                {index < categories.slice(0, 6).length - 1 && (
+                                    <div className='w-full lg:w-[316px] h-[1px] bg-black/15 mt-4 lg:mt-6'></div>
+                                )}
+                            </React.Fragment>
+                        ))}
                     </section>
                 </section>
 
@@ -1365,7 +1327,7 @@ export default function Home() {
                                 </div>
 
                                 {/* Column 2 - Last 2 posts */}
-                                        <div className='flex flex-col space-y-5 lg:space-y-5 w-full lg:w-[426px]'>
+                                <div className='flex flex-col space-y-5 lg:space-y-5 w-full lg:w-[426px]'>
                                     {section2Posts.slice(2, 4).map((post) => (
                                         <div key={post.id} className="lg:w-[426px] h-[260px] md:h-[360px] rounded-[8px] bg-white shadow-[0_4px_8px_rgba(0,0,0,0.25)] lg:shadow-[0_8px_4px_rgba(0,0,0,0.41)] flex flex-col">
                                             <div className="relative">

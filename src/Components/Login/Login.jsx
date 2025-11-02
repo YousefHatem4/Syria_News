@@ -35,7 +35,7 @@ export default function Login() {
                 values
             );
 
-            console.log('Login response:', data);
+         
 
             setLoginSuccess(true);
 
@@ -57,7 +57,7 @@ export default function Login() {
             if (data.roles && data.roles.length > 0) {
                 const userRole = data.roles.includes('ROLE_ADMIN') ? 'ADMIN' : 'USER';
                 localStorage.setItem('userRole', userRole);
-                console.log('User role stored:', userRole);
+               
             }
 
             // Navigate immediately without delay
