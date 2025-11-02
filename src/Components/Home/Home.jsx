@@ -1168,7 +1168,7 @@ export default function Home() {
 
                                 <div className='flex items-center justify-between flex-col-reverse md:flex-row gap-4 md:gap-0 md:ms-10'>
                                     <Link
-                                        to={`/newsdetails`}
+                                                to={`/newsdetails/${section1Posts[currentSection1Index].id}`}
                                         className='flex cursor-pointer px-[10px] py-[8px] justify-center items-center gap-2.5 rounded-[25px] border border-black/13 text-black text-right font-poppins text-[12px] font-normal leading-normal'
                                     >
                                         .....إقراء المزيد
@@ -1344,7 +1344,7 @@ export default function Home() {
 
                                                 <div className='flex justify-between w-full'>
                                                     <Link
-                                                        to={`/newsdetails`}
+                                                        to={`/newsdetails/${post.id}`}
                                                         className='text-[var(--Gray,#8A8A8A)] cursor-pointer ms-2 lg:ms-4 text-right font-[Poppins] text-[11px] lg:text-xs not-italic font-normal leading-normal flex items-center gap-1'
                                                     >
                                                         <p>...قراءة المزيد</p>
@@ -1395,7 +1395,7 @@ export default function Home() {
 
                                                 <div className='flex justify-between w-full'>
                                                     <Link
-                                                        to={`/newsdetails`}
+                                                        to={`/newsdetails/${post.id}`}
                                                         className='text-[var(--Gray,#8A8A8A)] cursor-pointer ms-2 lg:ms-4 text-right font-[Poppins] text-[11px] lg:text-xs not-italic font-normal leading-normal flex items-center gap-1'
                                                     >
                                                         <p>...قراءة المزيد</p>

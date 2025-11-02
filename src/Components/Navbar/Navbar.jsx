@@ -27,7 +27,6 @@ export default function Navbar() {
                 const userId = getUserId();
                 if (!userId || !userToken) return;
 
-                console.log('Fetching user data for userId:', userId);
 
                 const response = await axios.get(`${BASE_URL}users/${userId}`, {
                     headers: {
@@ -41,7 +40,6 @@ export default function Navbar() {
                     }
                 });
 
-                console.log('User data fetched in Navbar:', response.data);
 
                 if (response.data.userName) {
                     setUserName(response.data.userName);
