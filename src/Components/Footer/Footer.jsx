@@ -3,36 +3,53 @@ import style from './Footer.module.css'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faFacebookF, faXTwitter, faInstagram } from '@fortawesome/free-brands-svg-icons'
 import toast from 'react-hot-toast'
-import { CheckCircleIcon } from '@heroicons/react/24/outline' // heroicons for green check
+import { CheckCircleIcon } from '@heroicons/react/24/outline' // Heroicons for success notification
 
+/**
+ * Footer Component
+ * A comprehensive footer section featuring newsletter subscription, social media links,
+ * important navigation links, and company information with RTL (Right-to-Left) support
+ */
 export default function Footer() {
 
+    /**
+     * Handles the newsletter subscription form submission
+     * Displays a success toast notification when user subscribes
+     * @param {Event} e - Form submission event
+     */
     const handleSubscribe = (e) => {
-        e.preventDefault();
+        e.preventDefault(); // Prevent default form submission behavior
 
+        // Display custom success notification toast
         toast.custom(
             (t) => (
                 <div
                     className={`flex items-center gap-2 px-4 py-2 bg-white rounded-lg shadow-md border border-gray-200 ${t.visible ? 'animate-enter' : 'animate-leave'
                         }`}
-                    dir="rtl"
+                    dir="rtl" // Right-to-Left text direction for Arabic
                 >
+                    {/* Success check icon */}
                     <CheckCircleIcon className="w-6 h-6 text-green-600" />
+                    {/* Success message */}
                     <span className="text-sm font-medium text-gray-800">
                         تم الاشتراك تابع بريدك يوميا
                     </span>
                 </div>
             ),
-            { duration: 2000 }
+            { duration: 2000 } // Toast display duration in milliseconds
         );
     };
 
     return (
+        // Main footer container with dark background
         <footer className='bg-[#1B1D1E] px-7 py-15'>
+
+            {/* Footer content section with responsive layout */}
             <section
                 className='flex lg:flex-row flex-col lg:relative items-center lg:items-baseline justify-center lg:gap-40 gap-15 text-center lg:text-right'
             >
-                {/* Newsletter */}
+
+                {/* Newsletter Subscription Section */}
                 <div className='bg-[#E9EFF0] rounded-2xl p-6 flex flex-col justify-center shadow-sm'>
                     <h1 className='text-right text-black leading-tight font-semibold text-2xl my-Poppins-text'>
                         اشترك الآن بالنشرة الإخبارية
@@ -40,10 +57,13 @@ export default function Footer() {
                     <p className='text-black text-sm my-Tajawal-text text-right mt-2 opacity-80'>
                         نشرة إخبارية ترسل مباشرة لبريدك الإلكتروني يوميا
                     </p>
+
+                    {/* Subscription Form */}
                     <form
                         className='flex flex-col items-end mt-4 gap-3'
                         onSubmit={handleSubscribe}
                     >
+                        {/* Email input field */}
                         <input
                             type="email"
                             id="email"
@@ -51,6 +71,7 @@ export default function Footer() {
                             placeholder="أدخل بريدك الإلكتروني"
                             required
                         />
+                        {/* Subscribe button */}
                         <button
                             type='submit'
                             className='w-[321px] h-[40px] flex items-center justify-center bg-[#00844B] hover:bg-[#006c3d] text-white font-medium text-sm my-Poppins-text rounded-md transition-colors duration-200'
@@ -60,44 +81,61 @@ export default function Footer() {
                     </form>
                 </div>
 
-                {/* Divider */}
+                {/* Vertical Divider - Visible only on large screens */}
                 <div className='bg-white/20 h-[215px] w-px absolute lg:block hidden end-250'></div>
 
-                {/* Social Media */}
+                {/* Social Media Links Section */}
                 <div className='flex flex-col items-center lg:items-end ms-0 lg:ms-21'>
                     <h1 className='text-white text-2xl font-bold my-Tajawal-text'>
                         تابعنا
                     </h1>
+                    {/* Social media icons with hover effects */}
                     <div className="flex gap-4 mt-4">
-                        <FontAwesomeIcon icon={faFacebookF} className="text-white text-xl cursor-pointer hover:text-[#3b5998] transition-colors duration-200" />
-                        <FontAwesomeIcon icon={faXTwitter} className="text-white text-xl cursor-pointer hover:text-[#1da1f2] transition-colors duration-200" />
-                        <FontAwesomeIcon icon={faInstagram} className="text-white text-xl cursor-pointer hover:text-[#e1306c] transition-colors duration-200" />
+                        {/* Facebook icon with brand color hover */}
+                        <FontAwesomeIcon
+                            icon={faFacebookF}
+                            className="text-white text-xl cursor-pointer hover:text-[#3b5998] transition-colors duration-200"
+                        />
+                        {/* Twitter/X icon with brand color hover */}
+                        <FontAwesomeIcon
+                            icon={faXTwitter}
+                            className="text-white text-xl cursor-pointer hover:text-[#1da1f2] transition-colors duration-200"
+                        />
+                        {/* Instagram icon with brand color hover */}
+                        <FontAwesomeIcon
+                            icon={faInstagram}
+                            className="text-white text-xl cursor-pointer hover:text-[#e1306c] transition-colors duration-200"
+                        />
                     </div>
                 </div>
 
-                {/* Links */}
+                {/* Important Links Section */}
                 <div className='text-center lg:text-right'>
                     <ul>
                         <li className='text-white text-2xl font-bold my-Tajawal-text mb-3'>
                             روابط مهمه
                         </li>
+                        {/* Privacy Policy Link */}
                         <li className='text-white text-sm my-Tajawal-text mb-2 hover:opacity-80 transition cursor-pointer'>
                             سياسة الخصوصية
                         </li>
+                        {/* Terms of Use Link */}
                         <li className='text-white text-sm my-Tajawal-text mb-2 hover:opacity-80 transition cursor-pointer'>
                             شروط الاستخدام
                         </li>
+                        {/* Contact Us Link */}
                         <li className='text-white text-sm my-Tajawal-text hover:opacity-80 transition cursor-pointer'>
                             اتصل بنا
                         </li>
                     </ul>
                 </div>
 
-                {/* About */}
+                {/* Company Information Section */}
                 <div className='flex flex-col items-center lg:items-end'>
                     <h1 className='text-white text-2xl font-bold my-Tajawal-text mb-3'>
                         أخبار سوريا
                     </h1>
+                    {/* Company description */}
                     <p className='text-white text-sm my-Tajawal-text text-center lg:text-right opacity-80 leading-relaxed'>
                         منصة إخبارية موثوقة تقدم أحدث الأخبار
                     </p>
