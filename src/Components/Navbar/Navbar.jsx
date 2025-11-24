@@ -103,7 +103,7 @@ export default function Navbar() {
                     {/* Logo/Brand Section */}
                     <Link to={'/'} className="flex items-center space-x-3 rtl:space-x-reverse">
                         <span className="my-ruwudu-text font-semibold text-[24px] mt-2 sm:text-[28px] leading-[100%] text-[#000000]">
-                            New Syrian
+                            New Syria
                         </span>
                     </Link>
 
