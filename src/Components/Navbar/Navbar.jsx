@@ -42,7 +42,7 @@ export default function Navbar() {
                 if (!userId || !userToken) return;
 
                 // API call to get user details with authentication headers
-                const response = await axios.get(`${BASE_URL}users/${userId}`, {
+                const response = await axios.get(`${BASE_URL}users`, {
                     headers: {
                         'Authorization': `Bearer ${userToken}`,
                         'Content-Type': 'application/json'
