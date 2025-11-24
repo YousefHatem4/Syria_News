@@ -52,7 +52,7 @@ export default function Profile() {
 
             console.log('Fetching profile for userId:', userId);
 
-            const response = await axios.get(`${BASE_URL}users/${userId}`, {
+            const response = await axios.get(`${BASE_URL}users`, {
                 headers: {
                     'Authorization': `Bearer ${userToken}`,
                     'Content-Type': 'application/json'
