@@ -1741,12 +1741,7 @@ export default function Home() {
                                                     {post.bio || 'لا توجد نبذة متاحة'}
                                                 </p>
                                             </div>
-                                            {/* Read More Link */}
-                                            <div className="flex justify-end w-full mt-2">
-                                                <div className='text-[var(--Gray,#8A8A8A)] cursor-pointer text-right font-[Poppins] text-[11px] lg:text-xs not-italic font-normal leading-normal flex items-center gap-1'>
-                                                    <p>...قراءة المزيد</p>
-                                                </div>
-                                            </div>
+                                         
                                         </Link>
                                     ))}
                         </div>
