@@ -67,14 +67,16 @@ export default function Home() {
     const cardWidth = 261; // Fixed width for each card in pixels
     const cardsToShow = 5; // Number of cards to show at once
 
-  
+
 
     // Category images mapping - maintain existing images by index
     const categoryImages = [
-        "card-2.png",
-        "card-5.png",
-        "card-3.png",
         "card-4.png",
+        "card-3.png",
+        "card-5.png",
+        "card-8.png",
+        "card-7.png",
+        "card-2.png",
     ];
 
     // ============ API FUNCTIONS ============
@@ -1397,7 +1399,14 @@ export default function Home() {
                         {/* Render categories from API */}
                         {categories.slice(0, 6).map((category, index) => (
                             <React.Fragment key={index}>
-                                <div className='flex items-center gap-4 lg:gap-3'>
+                                <div
+                                    className='flex items-center gap-4 lg:gap-3 cursor-pointer hover:bg-gray-50 rounded-lg p-2 transition-colors'
+                                    onClick={() => navigate('/more-news', {
+                                        state: {
+                                            categoryName: category.name // Use the actual category name from API
+                                        }
+                                    })}
+                                >
                                     <div className='flex flex-col w-[65%] lg:w-[240px] items-end gap-[12px] lg:gap-[18px]'>
                                         {/* Category Title */}
                                         <div className='flex gap-2'>
@@ -1435,7 +1444,7 @@ export default function Home() {
                             <h1 className='text-black font-[tajawal] text-[24px] lg:text-[28px] font-bold leading-normal'>اخر الاخبار</h1>
                             <div className='w-[4px] lg:w-[5px] h-[32px] lg:h-[42px] rounded-[1px] bg-[#2D4639]'></div>
                         </div>
-                        <Link to={'/more-news'} className='text-[#545454] font-poppins text-[16px] lg:text-[20px] font-semibold leading-normal'>...رؤيه المزيد</Link>
+                        <Link to={'/more-news'} state={{ categoryName: "" }} className='text-[#545454] font-poppins text-[16px] lg:text-[20px] font-semibold leading-normal'>...رؤيه المزيد</Link>
                     </div>
 
                     {/* Posts with API */}
@@ -1453,6 +1462,56 @@ export default function Home() {
                         // Success State - Display Paginated Posts
                         <>
                             <section className='flex flex-col lg:flex-row justify-between items-start gap-6 lg:gap-10 mt-6 lg:mt-11'>
+                                {/* Column 2 - Last 2 posts */}
+                                <div className='flex flex-col space-y-5 lg:space-y-5 w-full lg:w-[426px]'>
+                                    {section2Posts.slice(2, 4).map((post) => (
+                                        <div key={post.id} className="lg:w-[426px] h-[260px] md:h-[360px] rounded-[8px] bg-white shadow-[0_4px_8px_rgba(0,0,0,0.25)] lg:shadow-[0_8px_4px_rgba(0,0,0,0.41)] flex flex-col">
+                                            <div className="relative">
+                                                {imageLoadingStates[post.id] && (
+                                                    <div className="absolute inset-0 flex items-center justify-center bg-gray-200 rounded-t-[8px]">
+                                                        <p className="text-gray-500">جاري تحميل الصورة...</p>
+                                                    </div>
+                                                )}
+                                                <img
+                                                    className={`w-full h-[160px] lg:h-[204px] shrink-0 rounded-t-[8px] object-cover ${imageLoadingStates[post.id] ? 'opacity-0' : 'opacity-100'}`}
+                                                    src={post.imageUrl || "post_image.jpg"}
+                                                    alt={post.header}
+                                                    onLoad={() => handleImageLoad(post.id)}
+                                                    onError={() => handleImageError(post.id)}
+                                                />
+                                            </div>
+
+                                            <div className="flex w-full px-4 flex-col items-end gap-3 lg:gap-5 mt-1 lg:mt-4">
+                                                <div className='flex items-center gap-2 w-full justify-end'>
+                                                    <h1 className='text-black font-[Poppins] text-[16px] lg:text-[20px] not-italic font-semibold leading-normal break-words overflow-hidden word-wrap break-word text-right max-w-[90%]'>
+                                                        {post.header}
+                                                    </h1>
+                                                    <span className='w-[3px] lg:w-[5px] h-[14px] lg:h-[19px] rounded-[1px] bg-[var(--dark-green-2-d-4639,#2D4639)] flex-shrink-0'></span>
+                                                </div>
+
+                                                <div className='w-full'>
+                                                    <p className='text-black text-right font-[Tajawal] text-[12px] lg:text-sm not-italic font-normal leading-normal break-words overflow-hidden word-wrap break-word max-h-[48px] overflow-y-auto'>
+                                                        {post.bio}
+                                                    </p>
+                                                </div>
+
+                                                <div className='flex justify-between w-full'>
+                                                    <Link
+                                                        to={`/newsdetails/${post.id}`}
+                                                        className='text-[var(--Gray,#8A8A8A)] cursor-pointer ms-2 lg:ms-4 text-right font-[Poppins] text-[11px] lg:text-xs not-italic font-normal leading-normal flex items-center gap-1'
+                                                    >
+                                                        <p>...قراءة المزيد</p>
+                                                    </Link>
+
+                                                    <div className='text-[var(--Gray,#8A8A8A)] text-right font-[Poppins] text-[10px] lg:text-xs not-italic font-normal leading-normal flex items-center gap-1 lg:gap-2'>
+                                                        <p>{formatDate(post.createdAt)}</p>
+                                                        <FontAwesomeIcon icon={faClock} className='text-[10px] lg:text-xs' />
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
                                 {/* Column 1 - First 2 posts */}
                                 <div className='flex flex-col space-y-5 lg:space-y-5 w-full lg:w-[426px]'>
                                     {section2Posts.slice(0, 2).map((post) => (
@@ -1508,56 +1567,7 @@ export default function Home() {
                                     ))}
                                 </div>
 
-                                {/* Column 2 - Last 2 posts */}
-                                <div className='flex flex-col space-y-5 lg:space-y-5 w-full lg:w-[426px]'>
-                                    {section2Posts.slice(2, 4).map((post) => (
-                                        <div key={post.id} className="lg:w-[426px] h-[260px] md:h-[360px] rounded-[8px] bg-white shadow-[0_4px_8px_rgba(0,0,0,0.25)] lg:shadow-[0_8px_4px_rgba(0,0,0,0.41)] flex flex-col">
-                                            <div className="relative">
-                                                {imageLoadingStates[post.id] && (
-                                                    <div className="absolute inset-0 flex items-center justify-center bg-gray-200 rounded-t-[8px]">
-                                                        <p className="text-gray-500">جاري تحميل الصورة...</p>
-                                                    </div>
-                                                )}
-                                                <img
-                                                    className={`w-full h-[160px] lg:h-[204px] shrink-0 rounded-t-[8px] object-cover ${imageLoadingStates[post.id] ? 'opacity-0' : 'opacity-100'}`}
-                                                    src={post.imageUrl || "post_image.jpg"}
-                                                    alt={post.header}
-                                                    onLoad={() => handleImageLoad(post.id)}
-                                                    onError={() => handleImageError(post.id)}
-                                                />
-                                            </div>
 
-                                            <div className="flex w-full px-4 flex-col items-end gap-3 lg:gap-5 mt-1 lg:mt-4">
-                                                <div className='flex items-center gap-2 w-full justify-end'>
-                                                    <h1 className='text-black font-[Poppins] text-[16px] lg:text-[20px] not-italic font-semibold leading-normal break-words overflow-hidden word-wrap break-word text-right max-w-[90%]'>
-                                                        {post.header}
-                                                    </h1>
-                                                    <span className='w-[3px] lg:w-[5px] h-[14px] lg:h-[19px] rounded-[1px] bg-[var(--dark-green-2-d-4639,#2D4639)] flex-shrink-0'></span>
-                                                </div>
-
-                                                <div className='w-full'>
-                                                    <p className='text-black text-right font-[Tajawal] text-[12px] lg:text-sm not-italic font-normal leading-normal break-words overflow-hidden word-wrap break-word max-h-[48px] overflow-y-auto'>
-                                                        {post.bio}
-                                                    </p>
-                                                </div>
-
-                                                <div className='flex justify-between w-full'>
-                                                    <Link
-                                                        to={`/newsdetails/${post.id}`}
-                                                        className='text-[var(--Gray,#8A8A8A)] cursor-pointer ms-2 lg:ms-4 text-right font-[Poppins] text-[11px] lg:text-xs not-italic font-normal leading-normal flex items-center gap-1'
-                                                    >
-                                                        <p>...قراءة المزيد</p>
-                                                    </Link>
-
-                                                    <div className='text-[var(--Gray,#8A8A8A)] text-right font-[Poppins] text-[10px] lg:text-xs not-italic font-normal leading-normal flex items-center gap-1 lg:gap-2'>
-                                                        <p>{formatDate(post.createdAt)}</p>
-                                                        <FontAwesomeIcon icon={faClock} className='text-[10px] lg:text-xs' />
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
                             </section>
 
                             {/* Pagination Controls */}
@@ -1711,7 +1721,7 @@ export default function Home() {
                                         )}
                                         <img
                                             src={post.imageUrl || "morepost-1.png"}
-                                            className={`h-[140px] md:h-[160px] shrink-0 self-stretch rounded-[4px] object-cover ${imageLoadingStates[post.id] ? 'opacity-0' : 'opacity-100'}`}
+                                            className={`h-[140px] md:h-[160px] w-full shrink-0 self-stretch rounded-[4px] object-cover ${imageLoadingStates[post.id] ? 'opacity-0' : 'opacity-100'}`}
                                             alt={post.header}
                                             onLoad={() => handleImageLoad(post.id)}
                                             onError={() => handleImageError(post.id)}
