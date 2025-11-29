@@ -157,7 +157,7 @@ export default function UserInfo({ userProfile, refreshProfile, profileImage, cl
             }
 
             const response = await axios.post(
-                `${BASE_URL}users/${userId}/complete-profile`,
+                `${BASE_URL}users/complete-profile`,
                 formData,
                 {
                     headers: {
