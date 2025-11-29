@@ -52,6 +52,11 @@ export default function Home() {
     const [section3Loading, setSection3Loading] = useState(true);
     const [section3Error, setSection3Error] = useState(null);
 
+    // Latest News Posts (for left section)
+    const [latestNewsPosts, setLatestNewsPosts] = useState([]);
+    const [latestNewsLoading, setLatestNewsLoading] = useState(true);
+    const [latestNewsError, setLatestNewsError] = useState(null);
+
     // ============ IMAGE LOADING STATES ============
     const [imageLoadingStates, setImageLoadingStates] = useState({}); // Tracks loading state for each post image
 
@@ -67,8 +72,6 @@ export default function Home() {
     const cardWidth = 261; // Fixed width for each card in pixels
     const cardsToShow = 5; // Number of cards to show at once
 
-
-
     // Category images mapping - maintain existing images by index
     const categoryImages = [
         "card-4.png",
@@ -79,7 +82,48 @@ export default function Home() {
         "card-2.png",
     ];
 
+    // Category translation mapping
+    const categoryTranslations = {
+        'Sports': 'الرياضة',
+        'Economy': 'الاقتصاد',
+        'Politics': 'السياسة',
+        'Arts': 'الفنون',
+        'Technology': 'التقنية',
+        'General': 'عام'
+    };
+
     // ============ API FUNCTIONS ============
+
+    /**
+     * Fetches Latest News Posts for Left Section
+     * Gets the last 2 posts from /articles/latest_news API
+     */
+    const fetchLatestNewsPosts = async () => {
+        try {
+            setLatestNewsLoading(true);
+            setLatestNewsError(null);
+
+            const response = await axios.get(`${BASE_URL}articles/latest_news`, {
+                headers: userToken ? {
+                    'Authorization': `Bearer ${userToken}`,
+                    'Accept': 'application/json',
+                } : {
+                    'Accept': 'application/json',
+                }
+            });
+
+            if (response.data && Array.isArray(response.data.content)) {
+                // Take only the last 2 posts
+                const lastTwoPosts = response.data.content.slice(0, 2);
+                setLatestNewsPosts(lastTwoPosts);
+            }
+        } catch (err) {
+            console.error('Error fetching latest news posts:', err);
+            setLatestNewsError('فشل في تحميل أحدث الأخبار');
+        } finally {
+            setLatestNewsLoading(false);
+        }
+    };
 
     /**
      * Fetches Section 1 Posts (Latest Posts - multiple for rotation)
@@ -266,6 +310,13 @@ export default function Home() {
     // ============ UTILITY FUNCTIONS ============
 
     /**
+     * Translates English category names to Arabic
+     */
+    const translateCategory = (categoryName) => {
+        return categoryTranslations[categoryName] || categoryName;
+    };
+
+    /**
      * Rotates section 1 posts every 10 seconds
      * Creates automatic carousel effect for hero section
      */
@@ -351,7 +402,7 @@ export default function Home() {
      * Handles right arrow click in section 3 slider
      */
     const nextSlide = () => {
-        if (currentSlide < moreNewsData.length - cardsToShow) {
+        if (currentSlide < section3Posts.length - cardsToShow) {
             setCurrentSlide(prev => prev + 1);
         }
     };
@@ -395,6 +446,7 @@ export default function Home() {
         fetchSection1Posts();
         fetchSection2Posts(0);
         fetchSection3Posts();
+        fetchLatestNewsPosts(); // Fetch latest news for left section
     }, []);
 
     // ============ ARTICLE CREATION FUNCTIONS ============
@@ -1264,24 +1316,97 @@ export default function Home() {
                             <FontAwesomeIcon icon={faNewspaper} className='text-[24px] md:text-[28px] text-gray-500'></FontAwesomeIcon>
                         </div>
 
-                        <p className='text-black font-[poppins] mt-5 text-[18px] md:text-[20px] font-semibold leading-normal '>تطورات اقتصادية مهمة في المنطقة</p>
+                        {latestNewsLoading ? (
+                            // Loading State for Latest News - Keep same design
+                            <>
+                                <p className='text-black font-[poppins] mt-5 text-[18px] md:text-[20px] font-semibold leading-normal '>جاري التحميل...</p>
 
-                        <div className='mt-2 flex flex-row-reverse gap-4 items-center'>
-                            <h1 className='flex justify-center items-center gap-2 px-[6px] py-[2px] rounded-[13px] bg-[#B9AF82] text-white font-[poppins] text-[16px] md:text-[20px] font-semibold leading-normal'>إقتصاد</h1>
-                            <p className='text-[#8A8A8A] font-poppins text-[12px] font-normal leading-normal'>منذ 30 دقيقة</p>
-                        </div>
+                                <div className='mt-2 flex flex-row-reverse gap-4 items-center'>
+                                    <h1 className='flex justify-center items-center gap-2 px-[6px] py-[2px] rounded-[13px] bg-[#B9AF82] text-white font-[poppins] text-[16px] md:text-[20px] font-semibold leading-normal'>إقتصاد</h1>
+                                    <p className='text-[#8A8A8A] font-poppins text-[12px] font-normal leading-normal'>جاري التحميل...</p>
+                                </div>
 
-                        <div className='w-full h-px bg-[rgba(0,0,0,0.15)] mt-3'></div>
+                                <div className='w-full h-px bg-[rgba(0,0,0,0.15)] mt-3'></div>
 
-                        <p className='text-black font-[poppins] text-[18px] md:text-[20px] font-semibold leading-normal mt-3'>تقنية جديدة تغير المشهد</p>
+                                <p className='text-black font-[poppins] text-[18px] md:text-[20px] font-semibold leading-normal mt-3'>جاري التحميل...</p>
 
-                        <div className='mt-2 flex flex-row-reverse gap-4 items-center'>
-                            <h1 className='flex justify-center items-center gap-2 px-[10px] py-[3px] rounded-[13px] bg-[#2D4639] text-white font-[poppins] text-[16px] md:text-[20px] font-semibold leading-normal'>تقنية</h1>
-                            <p className='text-[#8A8A8A] font-poppins text-[12px] font-normal leading-normal'>منذ ساعة</p>
-                        </div>
+                                <div className='mt-2 flex flex-row-reverse gap-4 items-center'>
+                                    <h1 className='flex justify-center items-center gap-2 px-[10px] py-[3px] rounded-[13px] bg-[#2D4639] text-white font-[poppins] text-[16px] md:text-[20px] font-semibold leading-normal'>تقنية</h1>
+                                    <p className='text-[#8A8A8A] font-poppins text-[12px] font-normal leading-normal'> جاري التحميل...</p>
+                                </div>
+                            </>
+                        ) : latestNewsError ? (
+                            // Error State for Latest News - Keep same design
+                            <>
+                                <p className='text-black font-[poppins] mt-5 text-[18px] md:text-[20px] font-semibold leading-normal '>تطورات اقتصادية مهمة في المنطقة</p>
+
+                                <div className='mt-2 flex flex-row-reverse gap-4 items-center'>
+                                    <h1 className='flex justify-center items-center gap-2 px-[6px] py-[2px] rounded-[13px] bg-[#B9AF82] text-white font-[poppins] text-[16px] md:text-[20px] font-semibold leading-normal'>إقتصاد</h1>
+                                    <p className='text-[#8A8A8A] font-poppins text-[12px] font-normal leading-normal'>منذ 30 دقيقة</p>
+                                </div>
+
+                                <div className='w-full h-px bg-[rgba(0,0,0,0.15)] mt-3'></div>
+
+                                <p className='text-black font-[poppins] text-[18px] md:text-[20px] font-semibold leading-normal mt-3'>تقنية جديدة تغير المشهد</p>
+
+                                <div className='mt-2 flex flex-row-reverse gap-4 items-center'>
+                                    <h1 className='flex justify-center items-center gap-2 px-[10px] py-[3px] rounded-[13px] bg-[#2D4639] text-white font-[poppins] text-[16px] md:text-[20px] font-semibold leading-normal'>تقنية</h1>
+                                    <p className='text-[#8A8A8A] font-poppins text-[12px] font-normal leading-normal'>منذ ساعة</p>
+                                </div>
+                            </>
+                        ) : latestNewsPosts.length > 0 ? (
+                            // Success State - Display Latest News from API with same design
+                            <>
+                                {latestNewsPosts.map((post, index) => (
+                                    <React.Fragment key={post.id}>
+                                        <Link
+                                            to={`/newsdetails/${post.id}`}
+                                            className='cursor-pointer w-full'
+                                        >
+                                            <p className='text-black font-[poppins] mt-5 text-[18px] text-right md:text-[20px] font-semibold leading-normal hover:text-[#00844B] transition-colors'>
+                                                {post.header}
+                                            </p>
+
+                                            <div className='mt-2 flex flex-row-reverse gap-4 items-center'>
+                                                <h1 className='flex justify-center items-center gap-2 px-[6px] py-[2px] rounded-[13px] bg-[#B9AF82] text-white font-[poppins] text-[16px] md:text-[20px] font-semibold leading-normal'>
+                                                    {translateCategory(post.categoryName) || 'عام'}
+                                                </h1>
+                                                <p className='text-[#8A8A8A] font-poppins text-[12px] font-normal leading-normal'>
+                                                    منذ 30 دقيقة
+                                                </p>
+                                            </div>
+                                        </Link>
+
+                                        {/* Separator between posts except for the last one */}
+                                        {index < latestNewsPosts.length - 1 && (
+                                            <div className='w-full h-px bg-[rgba(0,0,0,0.15)] mt-3'></div>
+                                        )}
+                                    </React.Fragment>
+                                ))}
+                            </>
+                        ) : (
+                            // Empty State for Latest News - Keep original design
+                            <>
+                                <p className='text-black font-[poppins] mt-5 text-[18px] md:text-[20px] font-semibold leading-normal '>تطورات اقتصادية مهمة في المنطقة</p>
+
+                                <div className='mt-2 flex flex-row-reverse gap-4 items-center'>
+                                    <h1 className='flex justify-center items-center gap-2 px-[6px] py-[2px] rounded-[13px] bg-[#B9AF82] text-white font-[poppins] text-[16px] md:text-[20px] font-semibold leading-normal'>إقتصاد</h1>
+                                    <p className='text-[#8A8A8A] font-poppins text-[12px] font-normal leading-normal'>منذ 30 دقيقة</p>
+                                </div>
+
+                                <div className='w-full h-px bg-[rgba(0,0,0,0.15)] mt-3'></div>
+
+                                <p className='text-black font-[poppins] text-[18px] md:text-[20px] font-semibold leading-normal mt-3'>تقنية جديدة تغير المشهد</p>
+
+                                <div className='mt-2 flex flex-row-reverse gap-4 items-center'>
+                                    <h1 className='flex justify-center items-center gap-2 px-[10px] py-[3px] rounded-[13px] bg-[#2D4639] text-white font-[poppins] text-[16px] md:text-[20px] font-semibold leading-normal'>تقنية</h1>
+                                    <p className='text-[#8A8A8A] font-poppins text-[12px] font-normal leading-normal'>منذ ساعة</p>
+                                </div>
+                            </>
+                        )}
                     </div>
 
-                    {/* Trending Topics Card */}
+                    {/* Trending Topics Card - Keep exact same design */}
                     <div className='h-auto md:h-[223px] w-full self-stretch flex-col p-4 flex rounded-[8px] bg-white shadow-[0_1px_4px_0_rgba(0,0,0,0.25)]'>
                         <div className='flex justify-end'>
                             <div className='text-black font-[tajawal] text-[24px] md:text-[28px] font-bold leading-normal flex items-center gap-2'>
@@ -1307,7 +1432,7 @@ export default function Home() {
                     </div>
                 </section>
 
-                {/* Right Section - Latest Post with API and Rotation */}
+                {/* Right Section - Latest Post with API and Rotation - Keep same design */}
                 <section className='w-full max-w-[723px] h-auto md:h-[510px] rounded-[8px] bg-white shadow-[0_4px_4px_0_rgba(0,0,0,0.25)] mt-8 lg:mt-0'>
                     {section1Loading ? (
                         // Loading State
@@ -1385,7 +1510,7 @@ export default function Home() {
             </section>
 
             {/* ============ LAST NEWS SECTION 2 ============ */}
-            {/* Category list and paginated news posts */}
+            {/* Category list and paginated news posts - Keep same design */}
             <section className='mt-25 flex flex-col lg:flex-row gap-8 lg:gap-15 justify-center responsive-padding'>
                 {/* Left Section - Categories */}
                 <section className='flex flex-col w-full lg:w-[401px] items-end gap-[25px] lg:gap-[43px]'>
@@ -1661,7 +1786,7 @@ export default function Home() {
             </section>
 
             {/* ============ MORE NEWS SECTION 3 ============ */}
-            {/* Slider section with horizontal scrolling news cards */}
+            {/* Slider section with horizontal scrolling news cards - Keep same design */}
             <section className='mt-20 mb-5 h-auto md:h-[440px] shrink-0 bg-[#1B1D1E] py-10'>
                 {/* Section Header Separator */}
                 <div className='flex justify-center'>
@@ -1710,40 +1835,40 @@ export default function Home() {
                             className='flex gap-4 md:gap-7 transition-transform duration-300 ease-in-out'
                             style={{ transform: `translateX(-${currentSlide * cardWidth}px)` }}
                         >
-                                    {section3Posts.map((post, index) => (
-                                        <Link
-                                            key={post.id}
-                                            to={`/newsdetails/${post.id}`}
-                                            className='flex w-[220px] md:w-[261px] h-[270px] md:h-[297px] flex-col items-end gap-2 flex-shrink-0 no-underline'
-                                        >
-                                            <div className="relative w-full h-[140px] md:h-[160px]">
-                                                {/* Image Loading Overlay */}
-                                                {imageLoadingStates[post.id] && (
-                                                    <div className="absolute inset-0 flex items-center justify-center bg-gray-700 rounded-[4px]">
-                                                        <p className="text-white text-sm">جاري تحميل الصورة...</p>
-                                                    </div>
-                                                )}
-                                                <img
-                                                    src={post.imageUrl || "morepost-1.png"}
-                                                    className={`h-[140px] md:h-[160px] w-full shrink-0 self-stretch rounded-[4px] object-cover ${imageLoadingStates[post.id] ? 'opacity-0' : 'opacity-100'}`}
-                                                    alt={post.header}
-                                                    onLoad={() => handleImageLoad(post.id)}
-                                                    onError={() => handleImageError(post.id)}
-                                                />
+                            {section3Posts.map((post, index) => (
+                                <Link
+                                    key={post.id}
+                                    to={`/newsdetails/${post.id}`}
+                                    className='flex w-[220px] md:w-[261px] h-[270px] md:h-[297px] flex-col items-end gap-2 flex-shrink-0 no-underline'
+                                >
+                                    <div className="relative w-full h-[140px] md:h-[160px]">
+                                        {/* Image Loading Overlay */}
+                                        {imageLoadingStates[post.id] && (
+                                            <div className="absolute inset-0 flex items-center justify-center bg-gray-700 rounded-[4px]">
+                                                <p className="text-white text-sm">جاري تحميل الصورة...</p>
                                             </div>
-                                            {/* Post Title */}
-                                            <h1 className='text-white text-right font-[Poppins] text-[16px] md:text-[20px] not-italic font-semibold leading-normal line-clamp-2'>
-                                                {post.header}
-                                            </h1>
-                                            {/* Post Bio */}
-                                            <div className="w-[90%] md:w-[80%]">
-                                                <p className="text-[#8A8A8A] text-right font-[Tajawal] text-[12px] md:text-[14px] not-italic font-normal leading-4 self-stretch line-clamp-3">
-                                                    {post.bio || 'لا توجد نبذة متاحة'}
-                                                </p>
-                                            </div>
-                                         
-                                        </Link>
-                                    ))}
+                                        )}
+                                        <img
+                                            src={post.imageUrl || "morepost-1.png"}
+                                            className={`h-[140px] md:h-[160px] w-full shrink-0 self-stretch rounded-[4px] object-cover ${imageLoadingStates[post.id] ? 'opacity-0' : 'opacity-100'}`}
+                                            alt={post.header}
+                                            onLoad={() => handleImageLoad(post.id)}
+                                            onError={() => handleImageError(post.id)}
+                                        />
+                                    </div>
+                                    {/* Post Title */}
+                                    <h1 className='text-white text-right font-[Poppins] text-[16px] md:text-[20px] not-italic font-semibold leading-normal line-clamp-2'>
+                                        {post.header}
+                                    </h1>
+                                    {/* Post Bio */}
+                                    <div className="w-[90%] md:w-[80%]">
+                                        <p className="text-[#8A8A8A] text-right font-[Tajawal] text-[12px] md:text-[14px] not-italic font-normal leading-4 self-stretch line-clamp-3">
+                                            {post.bio || 'لا توجد نبذة متاحة'}
+                                        </p>
+                                    </div>
+
+                                </Link>
+                            ))}
                         </div>
                     ) : (
                         // Empty State
