@@ -1710,35 +1710,45 @@ export default function Home() {
                             className='flex gap-4 md:gap-7 transition-transform duration-300 ease-in-out'
                             style={{ transform: `translateX(-${currentSlide * cardWidth}px)` }}
                         >
-                            {section3Posts.map((post, index) => (
-                                <div key={post.id} className='flex w-[220px] md:w-[261px] h-[270px] md:h-[297px] flex-col items-end gap-2 flex-shrink-0'>
-                                    <div className="relative w-full h-[140px] md:h-[160px]">
-                                        {/* Image Loading Overlay */}
-                                        {imageLoadingStates[post.id] && (
-                                            <div className="absolute inset-0 flex items-center justify-center bg-gray-700 rounded-[4px]">
-                                                <p className="text-white text-sm">جاري تحميل الصورة...</p>
+                                    {section3Posts.map((post, index) => (
+                                        <Link
+                                            key={post.id}
+                                            to={`/newsdetails/${post.id}`}
+                                            className='flex w-[220px] md:w-[261px] h-[270px] md:h-[297px] flex-col items-end gap-2 flex-shrink-0 no-underline'
+                                        >
+                                            <div className="relative w-full h-[140px] md:h-[160px]">
+                                                {/* Image Loading Overlay */}
+                                                {imageLoadingStates[post.id] && (
+                                                    <div className="absolute inset-0 flex items-center justify-center bg-gray-700 rounded-[4px]">
+                                                        <p className="text-white text-sm">جاري تحميل الصورة...</p>
+                                                    </div>
+                                                )}
+                                                <img
+                                                    src={post.imageUrl || "morepost-1.png"}
+                                                    className={`h-[140px] md:h-[160px] w-full shrink-0 self-stretch rounded-[4px] object-cover ${imageLoadingStates[post.id] ? 'opacity-0' : 'opacity-100'}`}
+                                                    alt={post.header}
+                                                    onLoad={() => handleImageLoad(post.id)}
+                                                    onError={() => handleImageError(post.id)}
+                                                />
                                             </div>
-                                        )}
-                                        <img
-                                            src={post.imageUrl || "morepost-1.png"}
-                                            className={`h-[140px] md:h-[160px] w-full shrink-0 self-stretch rounded-[4px] object-cover ${imageLoadingStates[post.id] ? 'opacity-0' : 'opacity-100'}`}
-                                            alt={post.header}
-                                            onLoad={() => handleImageLoad(post.id)}
-                                            onError={() => handleImageError(post.id)}
-                                        />
-                                    </div>
-                                    {/* Post Title */}
-                                    <h1 className='text-white text-right font-[Poppins] text-[16px] md:text-[20px] not-italic font-semibold leading-normal line-clamp-2'>
-                                        {post.header}
-                                    </h1>
-                                    {/* Post Bio */}
-                                    <div className="w-[90%] md:w-[80%]">
-                                        <p className="text-[#8A8A8A] text-right font-[Tajawal] text-[12px] md:text-[14px] not-italic font-normal leading-4 self-stretch line-clamp-3">
-                                            {post.bio || 'لا توجد نبذة متاحة'}
-                                        </p>
-                                    </div>
-                                </div>
-                            ))}
+                                            {/* Post Title */}
+                                            <h1 className='text-white text-right font-[Poppins] text-[16px] md:text-[20px] not-italic font-semibold leading-normal line-clamp-2'>
+                                                {post.header}
+                                            </h1>
+                                            {/* Post Bio */}
+                                            <div className="w-[90%] md:w-[80%]">
+                                                <p className="text-[#8A8A8A] text-right font-[Tajawal] text-[12px] md:text-[14px] not-italic font-normal leading-4 self-stretch line-clamp-3">
+                                                    {post.bio || 'لا توجد نبذة متاحة'}
+                                                </p>
+                                            </div>
+                                            {/* Read More Link */}
+                                            <div className="flex justify-end w-full mt-2">
+                                                <div className='text-[var(--Gray,#8A8A8A)] cursor-pointer text-right font-[Poppins] text-[11px] lg:text-xs not-italic font-normal leading-normal flex items-center gap-1'>
+                                                    <p>...قراءة المزيد</p>
+                                                </div>
+                                            </div>
+                                        </Link>
+                                    ))}
                         </div>
                     ) : (
                         // Empty State

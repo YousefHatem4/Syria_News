@@ -386,7 +386,7 @@ export default function NewsDetails() {
             <section className='bg-[linear-gradient(164deg,#004025_-0.36%,rgba(255,255,255,0.80)_34.44%,rgba(0,64,37,0.50)_101.6%)] h-auto relative flex items-center flex-col pb-10 pt-10 md:pt-0'>
                 {/* breadcrumb navigation */}
                 <section className='flex items-center gap-2 sm:gap-3 absolute top-30 sm:top-24 md:top-28 lg:top-32 xl:top-35 left-4 sm:left-6 md:left-8 lg:left-12 xl:left-15'>
-                    <h1 className='font-poppins text-[14px] sm:text-[16px] md:text-[18px] lg:text-[20px] font-semibold leading-normal text-white'>الصفحه الرئيسه </h1>
+                    <Link to={'/'} className='font-poppins text-[14px] sm:text-[16px] md:text-[18px] lg:text-[20px] font-semibold leading-normal text-white'>الصفحه الرئيسه </Link>
                     <FontAwesomeIcon icon={faAngleRight} className='text-white text-xs sm:text-sm md:text-base'></FontAwesomeIcon>
                     <h1 className='font-poppins text-[14px] sm:text-[16px] md:text-[18px] lg:text-[20px] font-semibold leading-normal text-[#00341E]'>تفاصيل الخبر </h1>
                 </section>
