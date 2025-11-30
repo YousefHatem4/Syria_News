@@ -89,7 +89,8 @@ export default function Home() {
         'Politics': 'السياسة',
         'Arts': 'الفنون',
         'Technology': 'التقنية',
-        'General': 'عام'
+        'General': 'عام',
+        'Health':'صحة'
     };
 
     // ============ API FUNCTIONS ============
@@ -127,25 +128,30 @@ export default function Home() {
 
     /**
      * Fetches Section 1 Posts (Latest Posts - multiple for rotation)
-     * Fetches 10 latest approved posts for the hero section rotation
+     * Fetches 10 latest approved posts for the hero section rotation using articles/filter
      */
     const fetchSection1Posts = async () => {
         try {
             setSection1Loading(true);
             setSection1Error(null);
 
-            const response = await axios.get(`${BASE_URL}articles/status`, {
-                params: {
-                    page: 0,
-                    size: 10, // Fetch more posts for rotation
-                    status: 'approved',
-                    sort: 'desc'
-                },
+            // Create FormData for multipart/form-data request (same as MoreNews)
+            const formData = new FormData();
+            formData.append('page', '0');
+            formData.append('size', '10'); // Fetch more posts for rotation
+            formData.append('categoryName', ''); // Empty string to get all categories
+            formData.append('status', 'approved');
+            formData.append('startDate', '');
+            formData.append('endDate', '');
+
+            const response = await axios.post(`${BASE_URL}articles/filter`, formData, {
                 headers: userToken ? {
                     'Authorization': `Bearer ${userToken}`,
                     'Accept': 'application/json',
+                    'Content-Type': 'multipart/form-data',
                 } : {
                     'Accept': 'application/json',
+                    'Content-Type': 'multipart/form-data',
                 }
             });
 
@@ -164,6 +170,30 @@ export default function Home() {
         } catch (err) {
             console.error('Error fetching section 1 posts:', err);
             setSection1Error('فشل في تحميل المنشورات');
+
+            // Fallback to alternative endpoint if main endpoint fails
+            try {
+                const fallbackResponse = await axios.get(`${BASE_URL}articles/status`, {
+                    params: {
+                        page: 0,
+                        size: 10,
+                        status: 'approved',
+                        sort: 'desc'
+                    },
+                    headers: userToken ? {
+                        'Authorization': `Bearer ${userToken}`,
+                        'Accept': 'application/json',
+                    } : {
+                        'Accept': 'application/json',
+                    }
+                });
+
+                if (fallbackResponse.data && Array.isArray(fallbackResponse.data.content)) {
+                    setSection1Posts(fallbackResponse.data.content);
+                }
+            } catch (fallbackErr) {
+                console.error('Error fetching section 1 posts from fallback:', fallbackErr);
+            }
         } finally {
             setSection1Loading(false);
         }
@@ -171,25 +201,30 @@ export default function Home() {
 
     /**
      * Fetches Section 2 Posts (4 posts per page with pagination)
-     * Used for the main news grid section
+     * Used for the main news grid section using articles/filter
      */
     const fetchSection2Posts = async (page = 0) => {
         try {
             setSection2Loading(true);
             setSection2Error(null);
 
-            const response = await axios.get(`${BASE_URL}articles/status`, {
-                params: {
-                    page: page,
-                    size: 4, // 4 posts per page
-                    status: 'approved',
-                    sort: 'desc'
-                },
+            // Create FormData for multipart/form-data request (same as MoreNews)
+            const formData = new FormData();
+            formData.append('page', page.toString());
+            formData.append('size', '4'); // 4 posts per page
+            formData.append('categoryName', ''); // Empty string to get all categories
+            formData.append('status', 'approved');
+            formData.append('startDate', '');
+            formData.append('endDate', '');
+
+            const response = await axios.post(`${BASE_URL}articles/filter`, formData, {
                 headers: userToken ? {
                     'Authorization': `Bearer ${userToken}`,
                     'Accept': 'application/json',
+                    'Content-Type': 'multipart/form-data',
                 } : {
                     'Accept': 'application/json',
+                    'Content-Type': 'multipart/form-data',
                 }
             });
 
@@ -209,6 +244,31 @@ export default function Home() {
         } catch (err) {
             console.error('Error fetching section 2 posts:', err);
             setSection2Error('فشل في تحميل المنشورات');
+
+            // Fallback to alternative endpoint if main endpoint fails
+            try {
+                const fallbackResponse = await axios.get(`${BASE_URL}articles/status`, {
+                    params: {
+                        page: page,
+                        size: 4,
+                        status: 'approved',
+                        sort: 'desc'
+                    },
+                    headers: userToken ? {
+                        'Authorization': `Bearer ${userToken}`,
+                        'Accept': 'application/json',
+                    } : {
+                        'Accept': 'application/json',
+                    }
+                });
+
+                if (fallbackResponse.data && Array.isArray(fallbackResponse.data.content)) {
+                    setSection2Posts(fallbackResponse.data.content);
+                    setSection2TotalPages(fallbackResponse.data.totalPages || 1);
+                }
+            } catch (fallbackErr) {
+                console.error('Error fetching section 2 posts from fallback:', fallbackErr);
+            }
         } finally {
             setSection2Loading(false);
         }
@@ -241,25 +301,30 @@ export default function Home() {
 
     /**
      * Fetches Section 3 Posts for the slider section
-     * Gets 8 approved posts for the bottom slider
+     * Gets 8 approved posts for the bottom slider using articles/filter
      */
     const fetchSection3Posts = async () => {
         try {
             setSection3Loading(true);
             setSection3Error(null);
 
-            const response = await axios.get(`${BASE_URL}articles/status`, {
-                params: {
-                    page: 0,
-                    size: 8, // Fetch 8 posts for the slider
-                    status: 'approved',
-                    sort: 'desc'
-                },
+            // Create FormData for multipart/form-data request (same as MoreNews)
+            const formData = new FormData();
+            formData.append('page', '0');
+            formData.append('size', '8'); // Fetch 8 posts for the slider
+            formData.append('categoryName', ''); // Empty string to get all categories
+            formData.append('status', 'approved');
+            formData.append('startDate', '');
+            formData.append('endDate', '');
+
+            const response = await axios.post(`${BASE_URL}articles/filter`, formData, {
                 headers: userToken ? {
                     'Authorization': `Bearer ${userToken}`,
                     'Accept': 'application/json',
+                    'Content-Type': 'multipart/form-data',
                 } : {
                     'Accept': 'application/json',
+                    'Content-Type': 'multipart/form-data',
                 }
             });
 
@@ -278,6 +343,30 @@ export default function Home() {
         } catch (err) {
             console.error('Error fetching section 3 posts:', err);
             setSection3Error('فشل في تحميل المنشورات');
+
+            // Fallback to alternative endpoint if main endpoint fails
+            try {
+                const fallbackResponse = await axios.get(`${BASE_URL}articles/status`, {
+                    params: {
+                        page: 0,
+                        size: 8,
+                        status: 'approved',
+                        sort: 'desc'
+                    },
+                    headers: userToken ? {
+                        'Authorization': `Bearer ${userToken}`,
+                        'Accept': 'application/json',
+                    } : {
+                        'Accept': 'application/json',
+                    }
+                });
+
+                if (fallbackResponse.data && Array.isArray(fallbackResponse.data.content)) {
+                    setSection3Posts(fallbackResponse.data.content);
+                }
+            } catch (fallbackErr) {
+                console.error('Error fetching section 3 posts from fallback:', fallbackErr);
+            }
         } finally {
             setSection3Loading(false);
         }
@@ -1317,7 +1406,7 @@ export default function Home() {
                         </div>
 
                         {latestNewsLoading ? (
-                            // Loading State for Latest News - Keep same design
+                            // Loading State for Latest News
                             <>
                                 <p className='text-black font-[poppins] mt-5 text-[18px] md:text-[20px] font-semibold leading-normal '>جاري التحميل...</p>
 
@@ -1336,7 +1425,7 @@ export default function Home() {
                                 </div>
                             </>
                         ) : latestNewsError ? (
-                            // Error State for Latest News - Keep same design
+                            // Error State for Latest News
                             <>
                                 <p className='text-black font-[poppins] mt-5 text-[18px] md:text-[20px] font-semibold leading-normal '>تطورات اقتصادية مهمة في المنطقة</p>
 
@@ -1355,7 +1444,7 @@ export default function Home() {
                                 </div>
                             </>
                         ) : latestNewsPosts.length > 0 ? (
-                            // Success State - Display Latest News from API with same design
+                            // Success State - Display Latest News from API with improved design
                             <>
                                 {latestNewsPosts.map((post, index) => (
                                     <React.Fragment key={post.id}>
@@ -1367,12 +1456,23 @@ export default function Home() {
                                                 {post.header}
                                             </p>
 
-                                            <div className='mt-2 flex flex-row-reverse gap-4 items-center'>
-                                                <h1 className='flex justify-center items-center gap-2 px-[6px] py-[2px] rounded-[13px] bg-[#B9AF82] text-white font-[poppins] text-[16px] md:text-[20px] font-semibold leading-normal'>
+                                            <div className='mt-2 flex flex-row-reverse gap-3 items-center justify-start'>
+                                                {/* Category Badge */}
+                                                <h1 className='flex justify-center items-center gap-2 px-[6px] py-[2px] rounded-[13px] bg-[#B9AF82] text-white font-[poppins] text-[14px] md:text-[16px] font-semibold leading-normal'>
                                                     {translateCategory(post.categoryName) || 'عام'}
                                                 </h1>
-                                                <p className='text-[#8A8A8A] font-poppins text-[12px] font-normal leading-normal'>
-                                                    منذ 30 دقيقة
+
+                                                {/* Improved Comment Display */}
+                                                <div className='flex items-center gap-1 bg-[#F0F0F0] px-2 py-1 rounded-lg'>
+                                                    <FontAwesomeIcon icon={faSquarePollVertical} className='text-[#00844B] text-xs' />
+                                                    <span className='text-[#636262] font-poppins text-[11px] font-medium leading-normal'>
+                                                        {post.commentCount || 0}
+                                                    </span>
+                                                </div>
+
+                                                {/* Formatted Date */}
+                                                <p className='text-[#8A8A8A] font-poppins text-[11px] font-normal leading-normal'>
+                                                    {formatDate(post.createdAt)}
                                                 </p>
                                             </div>
                                         </Link>
@@ -1385,7 +1485,7 @@ export default function Home() {
                                 ))}
                             </>
                         ) : (
-                            // Empty State for Latest News - Keep original design
+                            // Empty State for Latest News
                             <>
                                 <p className='text-black font-[poppins] mt-5 text-[18px] md:text-[20px] font-semibold leading-normal '>تطورات اقتصادية مهمة في المنطقة</p>
 
@@ -1493,9 +1593,9 @@ export default function Home() {
                                     </Link>
                                     <div className='flex items-center gap-4'>
                                         <h1 className='text-black text-right font-poppins text-[12px] font-normal leading-normal'>
-                                            {section1Posts[currentSection1Index].publisher?.username || 'مجهول'}
+                                                    {section1Posts[currentSection1Index].userName || 'مجهول'}
                                         </h1>
-                                        <img src="profile.jpg" className='w-[41px] h-[41px] rounded-[41px] object-cover' alt="" />
+                                                <img src={section1Posts[currentSection1Index].userImageUrl} className='w-[41px] h-[41px] rounded-[41px] object-cover' alt="" />
                                     </div>
                                 </div>
                             </div>

@@ -402,7 +402,7 @@ export default function MoreNews() {
         {/* ============ BREADCRUMB NAVIGATION ============ */}
         {/* Shows current page location with responsive positioning */}
         <section className='flex items-center gap-3 absolute top-47 sm:top-20 md:top-28 lg:top-35 left-4 sm:left-8 md:left-12 lg:left-15'>
-          <h1 className='font-poppins text-[16px] sm:text-[18px] md:text-[20px] font-semibold leading-normal text-white'> الصفحه الرئيسه </h1>
+          <Link to={'/'} className='font-poppins text-[16px] sm:text-[18px] md:text-[20px] font-semibold leading-normal text-white'> الصفحه الرئيسه </Link>
           <FontAwesomeIcon icon={faAngleRight} className='text-white text-sm md:text-base'></FontAwesomeIcon>
           <h1 className='font-poppins text-[16px] sm:text-[18px] md:text-[20px] font-semibold leading-normal text-[#00341E]'>جميع الأخبار </h1>
         </section>
