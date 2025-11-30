@@ -1,8 +1,58 @@
-import React from 'react'
+import React, { useState, useEffect, useContext } from 'react'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faArrowUp, faArrowDown } from '@fortawesome/free-solid-svg-icons';
+import axios from 'axios';
+import { userContext } from '../Context/userContext';
+import { BASE_URL } from '../../App'
 
 export default function Statistics() {
+    const [statistics, setStatistics] = useState({
+        accepted: 0,
+        rejected: 0,
+        pending: 0,
+        total: 0
+    });
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
+    let { userToken } = useContext(userContext);
+
+    /**
+     * Fetches user article statistics from API
+     */
+    const fetchStatistics = async () => {
+        try {
+            setLoading(true);
+            setError(null);
+
+            const response = await axios.get(`${BASE_URL}users/articles/status-count`, {
+                headers: userToken ? {
+                    'Authorization': `Bearer ${userToken}`,
+                    'Accept': 'application/json',
+                } : {
+                    'Accept': 'application/json',
+                }
+            });
+
+            if (response.data) {
+                setStatistics({
+                    accepted: response.data.accepted || 0,
+                    rejected: response.data.rejected || 0,
+                    pending: response.data.pending || 0,
+                    total: response.data.total || 0
+                });
+            }
+        } catch (err) {
+            console.error('Error fetching statistics:', err);
+            setError('فشل في تحميل الإحصائيات');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        fetchStatistics();
+    }, []);
+
     return <>
         <section className='flex w-full md:w-[804px] items-end pt-6 md:pt-8 pr-4 md:pr-[33px] pb-6 md:pb-[33px] pl-4 md:pl-[33px] flex-col gap-4 md:gap-[23px] self-stretch rounded-[10px] border border-[rgba(233,200,130,0.10)] bg-[rgba(45,70,57,0.20)]'>
             {/* title 1*/}
@@ -16,13 +66,13 @@ export default function Statistics() {
             {/* cards */}
             <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-x-6 md:gap-y-3 w-full'>
 
-                {/* card 1 */}
+                {/* card 1 - Pending */}
                 <div className='w-full sm:w-[calc(50%-12px)] lg:w-[243.33px] flex flex-col items-end gap-3 md:gap-4 h-[140px] md:h-[164px] px-4 md:px-5 py-4 md:py-6 shrink-0 rounded-[12px] border-t-[4px] border-t-[var(--bright-green-00844-b,#00844B)] bg-[rgba(255,255,255,0.80)] shadow-[0_4px_10px_rgba(0,0,0,0.05)]'>
                     <h1 className='text-[#00844B] text-right font-[Cairo] text-[13px] md:text-[14.4px] not-italic font-normal leading-normal'>
                         قيد المراجعة
                     </h1>
                     <h1 className='text-[#00844B] text-right font-[Cairo] text-[24px] md:text-[28.8px] not-italic font-bold leading-normal'>
-                        5
+                        {loading ? '...' : error ? 'فشل التحميل' : statistics.pending}
                     </h1>
                     <div className='flex items-center gap-2'>
                         <div className='flex flex-row-reverse items-center gap-1'>
@@ -37,13 +87,13 @@ export default function Statistics() {
                     </div>
                 </div>
 
-                {/* card 2 */}
+                {/* card 2 - Accepted */}
                 <div className='w-full sm:w-[calc(50%-12px)] lg:w-[243.33px] flex flex-col items-end gap-3 md:gap-4 h-[140px] md:h-[164px] px-4 md:px-5 py-4 md:py-6 shrink-0 rounded-[12px] border-t-[4px] border-t-[var(--bright-green-00844-b,#00844B)] bg-[rgba(255,255,255,0.80)] shadow-[0_4px_10px_rgba(0,0,0,0.05)]'>
                     <h1 className='text-[#00844B] text-right font-[Cairo] text-[13px] md:text-[14.4px] not-italic font-normal leading-normal'>
                         المنشورات المقبولة
                     </h1>
                     <h1 className='text-[#00844B] text-right font-[Cairo] text-[24px] md:text-[28.8px] not-italic font-bold leading-normal'>
-                        38
+                        {loading ? '...' : error ? 'فشل التحميل' : statistics.accepted}
                     </h1>
                     <div className='flex items-center gap-2'>
                         <div className='flex flex-row-reverse items-center gap-1'>
@@ -58,13 +108,13 @@ export default function Statistics() {
                     </div>
                 </div>
 
-                {/* card 3 */}
+                {/* card 3 - Total */}
                 <div className='w-full sm:w-[calc(50%-12px)] lg:w-[243.33px] flex flex-col items-end gap-3 md:gap-4 h-[140px] md:h-[164px] px-4 md:px-5 py-4 md:py-6 shrink-0 rounded-[12px] border-t-[4px] border-t-[var(--bright-green-00844-b,#00844B)] bg-[rgba(255,255,255,0.80)] shadow-[0_4px_10px_rgba(0,0,0,0.05)]'>
                     <h1 className='text-[#00844B] text-right font-[Cairo] text-[13px] md:text-[14.4px] not-italic font-normal leading-normal'>
                         إجمالي المنشورات
                     </h1>
                     <h1 className='text-[#00844B] text-right font-[Cairo] text-[24px] md:text-[28.8px] not-italic font-bold leading-normal'>
-                        47
+                        {loading ? '...' : error ? 'فشل التحميل' : statistics.total}
                     </h1>
                     <div className='flex items-center gap-2'>
                         <div className='flex flex-row-reverse items-center gap-1'>
@@ -79,13 +129,13 @@ export default function Statistics() {
                     </div>
                 </div>
 
-                {/* card 4 */}
+                {/* card 4 - Rejected */}
                 <div className='w-full sm:w-[calc(50%-12px)] lg:w-[243.33px] lg:col-start-3 flex flex-col items-end gap-3 md:gap-4 h-[140px] md:h-[164px] px-4 md:px-5 py-4 md:py-6 shrink-0 rounded-[12px] border-t-[4px] border-t-[var(--bright-green-00844-b,#00844B)] bg-[rgba(255,255,255,0.80)] shadow-[0_4px_10px_rgba(0,0,0,0.05)]'>
                     <h1 className='text-[#00844B] text-right font-[Cairo] text-[13px] md:text-[14.4px] not-italic font-normal leading-normal'>
                         الرفض
                     </h1>
                     <h1 className='text-[#00844B] text-right font-[Cairo] text-[24px] md:text-[28.8px] not-italic font-bold leading-normal'>
-                        4
+                        {loading ? '...' : error ? 'فشل التحميل' : statistics.rejected}
                     </h1>
                     <div className='flex items-center gap-2'>
                         <div className='flex flex-row-reverse items-center gap-1'>

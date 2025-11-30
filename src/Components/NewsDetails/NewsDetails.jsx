@@ -668,10 +668,10 @@ export default function NewsDetails() {
                                                     </Link>
                                                     <div className='flex items-center gap-3'>
                                                         <h1 className='text-black text-right font-poppins text-[11px] sm:text-[12px] font-normal leading-normal'>
-                                                            {post.publisher?.username || 'مجهول'}
+                                                            {post.userName || 'مجهول'}
                                                         </h1>
                                                         <img
-                                                            src={post.publisher?.imageUrl || "profile.jpg"}
+                                                            src={post.userImageUrl || "profile.jpg"}
                                                             className='w-[35px] h-[35px] sm:w-[41px] sm:h-[41px] rounded-full object-cover'
                                                             alt={post.publisher?.username || "صورة الناشر"}
                                                             
