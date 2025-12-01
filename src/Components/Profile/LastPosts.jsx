@@ -4,7 +4,7 @@ import { faRetweet, faEye, faCheck, faXmark, faPenToSquare } from "@fortawesome/
 import axios from 'axios';
 import { userContext } from '../Context/userContext';
 
-const BASE_URL = "https://newssyriabackend-newsyria.up.railway.app/api/v1/";
+const BASE_URL = "https://newsyriabackendv2-production.up.railway.app/api/v1/";
 
 export default function LastPosts() {
   // Pagination state
