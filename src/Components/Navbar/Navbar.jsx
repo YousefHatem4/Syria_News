@@ -20,7 +20,7 @@ export default function Navbar() {
 
     // Component state management
     const [menuOpen, setMenuOpen] = useState(false); // Mobile menu toggle state
-    const [userName, setUserName] = useState('أحمد'); // User display name with default value
+    const [userName, setUserName] = useState(''); // User display name with default value
 
     /**
      * Retrieves user ID from localStorage

@@ -3,8 +3,9 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faRetweet, faEye, faCheck, faXmark, faPenToSquare } from "@fortawesome/free-solid-svg-icons";
 import axios from 'axios';
 import { userContext } from '../Context/userContext';
+import { BASE_URL } from '../../App';
 
-const BASE_URL = "https://newssyriabackend-newsyria.up.railway.app/api/v1/";
+
 
 export default function LastPosts() {
   // Pagination state
