@@ -78,6 +78,11 @@ export default function Login() {
             localStorage.setItem('userId', data.userId);
             localStorage.setItem('userEmail', data.email);
 
+            // NEW: Store the password in localStorage for use in change password page
+            // Note: In a real application, consider security implications
+            // For demo purposes, we'll store it temporarily
+            localStorage.setItem('userPassword', values.password);
+
             // Store user roles from login response for authorization
             if (data.roles && data.roles.length > 0) {
                 const userRole = data.roles.includes('ROLE_ADMIN') ? 'ADMIN' : 'USER';
