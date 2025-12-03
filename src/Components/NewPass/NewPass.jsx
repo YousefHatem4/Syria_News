@@ -1,9 +1,11 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import style from './NewPass.module.css'
 import { faEnvelope } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faUser, faLock, faEye, faEyeSlash, faUserPlus } from '@fortawesome/free-solid-svg-icons';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
+import axios from 'axios';
+import { BASE_URL } from '../../App';
 
 // Added imports for toast
 import toast, { Toaster } from 'react-hot-toast';
@@ -12,33 +14,106 @@ import { FaCheckCircle } from 'react-icons/fa';
 export default function NewPass() {
 
     const navigate = useNavigate();
+    const location = useLocation();
     const [showPassword, setShowPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+    const [password, setPassword] = useState('');
+    const [confirmPassword, setConfirmPassword] = useState('');
+    const [loading, setLoading] = useState(false);
 
-    const handleSubmit = (e) => {
+    // Get token and email from location state (passed from verifyCode page)
+    const token = location.state?.token || '';
+    const email = location.state?.email || '';
+
+    useEffect(() => {
+        // Check if token exists, if not redirect back
+        if (!token) {
+            alert('رمز التحقق غير متوفر. يرجى العودة إلى صفحة التحقق');
+            navigate('/verifycode');
+        }
+    }, [token, navigate]);
+
+    const handleSubmit = async (e) => {
         e.preventDefault();
 
-        toast.custom(
-            (t) => (
-                <div
-                    className={`flex items-center gap-2 px-4 py-2 bg-white rounded-lg shadow-md border border-gray-200 ${t.visible ? 'animate-enter' : 'animate-leave'
-                        }`}
-                    dir="rtl"
-                >
-                    <FaCheckCircle className="w-6 h-6 text-green-600" />
-                    <span className="text-sm font-medium text-gray-800">
-                        تم حفظ كلمه مرورك الجديده
-                    </span>
-                </div>
-            ),
-            { duration: 2000 }
-        );
+        // Validate passwords
+        if (password !== confirmPassword) {
+            alert('كلمة المرور وتأكيد كلمة المرور غير متطابقين');
+            return;
+        }
 
+        if (password.length < 6) {
+            alert('كلمة المرور يجب أن تكون على الأقل 6 أحرف');
+            return;
+        }
 
-        // Navigate after short delay
-        setTimeout(() => {
-            navigate('/login');
-        }, 1500);
+        try {
+            setLoading(true);
+
+            // Create FormData payload for reset-password endpoint
+            const formData = new FormData();
+            formData.append('newPassword', password);
+
+            // Send request to reset password endpoint with token
+            const response = await axios.post(
+                `${BASE_URL}auth/reset-password`,
+                formData,
+                {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Accept': 'application/json',
+                        'Content-Type': 'multipart/form-data',
+                    },
+                    timeout: 10000,
+                }
+            );
+
+            console.log('Password reset response:', response.data);
+
+            if (response.status === 200) {
+                // Show success toast
+                toast.custom(
+                    (t) => (
+                        <div
+                            className={`flex items-center gap-2 px-4 py-2 bg-white rounded-lg shadow-md border border-gray-200 ${t.visible ? 'animate-enter' : 'animate-leave'
+                                }`}
+                            dir="rtl"
+                        >
+                            <FaCheckCircle className="w-6 h-6 text-green-600" />
+                            <span className="text-sm font-medium text-gray-800">
+                                تم حفظ كلمه مرورك الجديده
+                            </span>
+                        </div>
+                    ),
+                    { duration: 2000 }
+                );
+
+                // Navigate after short delay
+                setTimeout(() => {
+                    navigate('/login');
+                }, 1500);
+            }
+
+        } catch (err) {
+            console.error('Password reset error:', err);
+
+            // Handle specific error cases
+            if (err.code === 'ERR_NETWORK') {
+                alert('تعذر الاتصال بالخادم. يرجى التحقق من اتصال الإنترنت.');
+            } else if (err.response?.status === 400) {
+                alert('طلب غير صالح. يرجى المحاولة مرة أخرى.');
+            } else if (err.response?.status === 401) {
+                alert('انتهت صلاحية الرمز. يرجى إعادة عملية استعادة كلمة المرور.');
+            } else if (err.response?.status === 404) {
+                alert('الرابط غير صالح أو منتهي الصلاحية.');
+            } else if (err.response?.data?.message) {
+                alert(err.response.data.message);
+            } else {
+                alert('فشل في تعيين كلمة المرور. يرجى المحاولة مرة أخرى.');
+            }
+        } finally {
+            setLoading(false);
+        }
     };
 
     const togglePasswordVisibility = () => {
@@ -77,10 +152,13 @@ export default function NewPass() {
                             <input
                                 type={showPassword ? "text" : "password"}
                                 id="password"
+                                value={password}
+                                onChange={(e) => setPassword(e.target.value)}
                                 className="bg-gray-50 border focus:outline-none focus:border-[#00844B] border-gray-300 text-[#000000] text-sm my-Tajawal-text rounded-lg block w-full h-[40px] pr-10 pl-10 shadow-[inset_0px_2px_3.6px_#00000020]"
                                 placeholder="ادخل كلمة المرور"
                                 required
                                 dir="rtl"
+                                disabled={loading}
                             />
                             <FontAwesomeIcon
                                 icon={showPassword ? faEye : faEyeSlash}
@@ -101,10 +179,13 @@ export default function NewPass() {
                             <input
                                 type={showConfirmPassword ? "text" : "password"}
                                 id="confirmPassword"
+                                value={confirmPassword}
+                                onChange={(e) => setConfirmPassword(e.target.value)}
                                 className="bg-gray-50 border focus:outline-none focus:border-[#00844B] border-gray-300 text-[#000000] text-sm my-Tajawal-text rounded-lg block w-full h-[40px] pr-10 pl-10 shadow-[inset_0px_2px_3.6px_#00000020]"
                                 placeholder="اعد إدخل كلمة المرور"
                                 required
                                 dir="rtl"
+                                disabled={loading}
                             />
                             <FontAwesomeIcon
                                 icon={showConfirmPassword ? faEye : faEyeSlash}
@@ -114,9 +195,10 @@ export default function NewPass() {
                         </div>
                         <button
                             type="submit"
-                            className='w-full  max-w-[321px] cursor-pointer h-[40px] md:h-[27px] bg-[#00844B] text-white text-[12px] rounded-sm hover:bg-[#006C3C] transition duration-300 mb-4'
+                            disabled={loading}
+                            className='w-full  max-w-[321px] cursor-pointer h-[40px] md:h-[27px] bg-[#00844B] text-white text-[12px] rounded-sm hover:bg-[#006C3C] transition duration-300 mb-4 disabled:opacity-70 disabled:cursor-not-allowed'
                         >
-                            حفظ كلمه المرور
+                            {loading ? 'جاري الحفظ...' : 'حفظ كلمه المرور'}
                         </button>
                     </form>
                 </div>

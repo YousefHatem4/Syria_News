@@ -7,6 +7,7 @@ export default function VerfiyCode() {
     const [code, setCode] = useState(new Array(4).fill(''));
     const [timer, setTimer] = useState(60);
     const [loading, setLoading] = useState(false);
+    const [token, setToken] = useState(null); // New state to store token
     const inputsRef = useRef([]);
     const navigate = useNavigate();
     const location = useLocation();
@@ -80,12 +81,24 @@ export default function VerfiyCode() {
 
             console.log('Verification response:', response.data);
 
+            // Extract token from response
+            // Note: The response schema shows "Token : " with a space and colon
+            // Try different possible key names
+            const responseToken = response.data.token ||
+                response.data.Token ||
+                response.data['Token : '] ||
+                null;
+
+            if (responseToken) {
+                setToken(responseToken); // Store token in state
+            }
+
             // If verification successful, navigate to new password page
             if (response.status === 200) {
                 navigate('/newpass', {
                     state: {
                         email: email,
-                        token: response.data.token || null
+                        token: responseToken // Pass the extracted token
                     }
                 });
             }
