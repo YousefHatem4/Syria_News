@@ -629,7 +629,7 @@ export default function NewsDetails() {
                             <>
                                 <section className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8 lg:gap-7 mt-6 sm:mt-8 md:mt-10'>
                                     {relatedPosts.map((post) => (
-                                        <section key={post.id} className='w-full max-w-[500px] md:max-w-[423px] h-auto md:h-[400px] rounded-[8px] bg-white shadow-[0_4px_4px_0_rgba(0,0,0,0.25)] mx-auto flex flex-col'>
+                                        <Link to={`/newsdetails/${post.id}`} key={post.id} className='w-full max-w-[500px] md:max-w-[423px] h-auto md:h-[400px] rounded-[8px] bg-white shadow-[0_4px_4px_0_rgba(0,0,0,0.25)] mx-auto flex flex-col'>
                                             {/* Image container with fixed height */}
                                             <div className='w-full h-[150px] md:h-[180px] flex-shrink-0'>
                                                 <img
@@ -659,13 +659,8 @@ export default function NewsDetails() {
                                                     {post.bio || 'لا توجد نبذة متاحة'}
                                                 </p>
 
-                                                <div className='flex items-center justify-between flex-col-reverse sm:flex-row gap-3 sm:gap-0 mt-auto pt-2'>
-                                                    <Link
-                                                        to={`/newsdetails/${post.id}`}
-                                                        className='flex cursor-pointer px-[8px] py-[6px] justify-center items-center gap-2.5 rounded-[25px] border border-black/13 text-black text-right font-poppins text-[11px] sm:text-[12px] font-normal leading-normal transition-all duration-300 hover:bg-[#00844B] hover:text-white hover:border-[#00844B]'
-                                                    >
-                                                        .....إقراء المزيد
-                                                    </Link>
+                                                <div className='flex items-center justify-end flex-col-reverse sm:flex-row gap-3 sm:gap-0 mt-auto pt-2'>
+                                                 
                                                     <div className='flex items-center gap-3'>
                                                         <h1 className='text-black text-right font-poppins text-[11px] sm:text-[12px] font-normal leading-normal'>
                                                             {post.userName || 'مجهول'}
@@ -679,7 +674,7 @@ export default function NewsDetails() {
                                                     </div>
                                                 </div>
                                             </div>
-                                        </section>
+                                        </Link>
                                     ))}
                                 </section>
 

@@ -1547,58 +1547,55 @@ export default function Home() {
                     ) : section1Posts.length > 0 ? (
                         // Success State - Display Rotating Post
                         <>
-                            <div className="relative">
-                                {/* Image Loading Overlay */}
-                                {imageLoadingStates[section1Posts[currentSection1Index]?.id] && (
-                                    <div className="absolute inset-0 flex items-center justify-center bg-gray-200 rounded-t-[8px]">
-                                        <p className="text-gray-500">جاري تحميل الصورة...</p>
-                                    </div>
-                                )}
-                                <img
-                                    src={section1Posts[currentSection1Index].imageUrl || "post.jpg"}
-                                    className={`w-full h-[180px] md:h-[228px] flex-shrink-0 rounded-t-[8px] rounded-b-[0px] object-cover ${imageLoadingStates[section1Posts[currentSection1Index]?.id] ? 'opacity-0' : 'opacity-100'}`}
-                                    alt="post_Photo"
-                                    onLoad={() => handleImageLoad(section1Posts[currentSection1Index].id)}
-                                    onError={() => handleImageError(section1Posts[currentSection1Index].id)}
-                                />
-                            </div>
-                            <div className='flex-col p-4 flex gap-6 md:gap-8'>
-                                {/* Post Meta Information */}
-                                <div className='flex items-center justify-end gap-4'>
-                                    <p className='text-[#8A8A8A] text-right font-[poppins] text-[12px] font-normal leading-normal'>
-                                        {formatDate(section1Posts[currentSection1Index].createdAt)}
-                                    </p>
-                                    <h1 className='flex w-[87px] px-[6px] py-[2px] justify-center items-center gap-2 rounded-[28px] bg-[#00844B] text-white text-[14px] md:text-[16px] font-[tajawal] font-bold leading-normal text-right'>
-                                        عاجل
-                                    </h1>
-                                </div>
+                                    <Link to={`/newsdetails/${section1Posts[currentSection1Index].id}`}>
+                                        <div className="relative">
+                                            {/* Image Loading Overlay */}
+                                            {imageLoadingStates[section1Posts[currentSection1Index]?.id] && (
+                                                <div className="absolute inset-0 flex items-center justify-center bg-gray-200 rounded-t-[8px]">
+                                                    <p className="text-gray-500">جاري تحميل الصورة...</p>
+                                                </div>
+                                            )}
+                                            <img
+                                                src={section1Posts[currentSection1Index].imageUrl || "post.jpg"}
+                                                className={`w-full h-[180px] md:h-[228px] flex-shrink-0 rounded-t-[8px] rounded-b-[0px] object-cover ${imageLoadingStates[section1Posts[currentSection1Index]?.id] ? 'opacity-0' : 'opacity-100'}`}
+                                                alt="post_Photo"
+                                                onLoad={() => handleImageLoad(section1Posts[currentSection1Index].id)}
+                                                onError={() => handleImageError(section1Posts[currentSection1Index].id)}
+                                            />
+                                        </div>
+                                        <div className='flex-col p-4 flex gap-6 md:gap-8'>
+                                            {/* Post Meta Information */}
+                                            <div className='flex items-center justify-end gap-4'>
+                                                <p className='text-[#8A8A8A] text-right font-[poppins] text-[12px] font-normal leading-normal'>
+                                                    {formatDate(section1Posts[currentSection1Index].createdAt)}
+                                                </p>
+                                                <h1 className='flex w-[87px] px-[6px] py-[2px] justify-center items-center gap-2 rounded-[28px] bg-[#00844B] text-white text-[14px] md:text-[16px] font-[tajawal] font-bold leading-normal text-right'>
+                                                    عاجل
+                                                </h1>
+                                            </div>
 
-                                {/* Post Title */}
-                                <h1 className='text-black text-right font-poppins text-[18px] md:text-[20px] font-semibold leading-normal break-words overflow-hidden word-wrap break-word'>
-                                    {section1Posts[currentSection1Index].header}
-                                </h1>
+                                            {/* Post Title */}
+                                            <h1 className='text-black text-right font-poppins text-[18px] md:text-[20px] font-semibold leading-normal break-words overflow-hidden word-wrap break-word'>
+                                                {section1Posts[currentSection1Index].header}
+                                            </h1>
 
-                                {/* Post Bio/Description */}
-                                <p className='text-[#636262] text-right font-tajawal text-[14px] font-normal leading-normal break-words overflow-hidden word-wrap break-word max-h-[72px] overflow-y-auto'>
-                                    {section1Posts[currentSection1Index].bio || 'لا توجد نبذة متاحة'}
-                                </p>
+                                            {/* Post Bio/Description */}
+                                            <p className='text-[#636262] text-right font-tajawal text-[14px] font-normal leading-normal break-words overflow-hidden word-wrap break-word max-h-[72px] overflow-y-auto'>
+                                                {section1Posts[currentSection1Index].bio || 'لا توجد نبذة متاحة'}
+                                            </p>
 
-                                {/* Post Footer with Read More and Author */}
-                                <div className='flex items-center justify-between flex-col-reverse md:flex-row gap-4 md:gap-0 md:ms-10'>
-                                    <Link
-                                        to={`/newsdetails/${section1Posts[currentSection1Index].id}`}
-                                        className='flex cursor-pointer px-[10px] py-[8px] justify-center items-center gap-2.5 rounded-[25px] border border-black/13 text-black text-right font-poppins text-[12px] font-normal leading-normal'
-                                    >
-                                        .....إقراء المزيد
-                                    </Link>
-                                    <div className='flex items-center gap-4'>
-                                        <h1 className='text-black text-right font-poppins text-[12px] font-normal leading-normal'>
-                                                    {section1Posts[currentSection1Index].userName || 'مجهول'}
-                                        </h1>
-                                                <img src={section1Posts[currentSection1Index].userImageUrl} className='w-[41px] h-[41px] rounded-[41px] object-cover' alt="" />
-                                    </div>
-                                </div>
-                            </div>
+                                            {/* Post Footer with Read More and Author */}
+                                            <div className='flex items-center justify-end flex-col-reverse md:flex-row gap-4 md:gap-0 md:ms-10'>
+                                             
+                                                <div className='flex items-center gap-4'>
+                                                    <h1 className='text-black text-right font-poppins text-[12px] font-normal leading-normal'>
+                                                        {section1Posts[currentSection1Index].userName || 'مجهول'}
+                                                    </h1>
+                                                    <img src={section1Posts[currentSection1Index].userImageUrl} className='w-[41px] h-[41px] rounded-[41px] object-cover' alt="" />
+                                                </div>
+                                            </div>
+                                        </div>
+                            </Link>
                         </>
                     ) : (
                         // Empty State
@@ -1690,7 +1687,7 @@ export default function Home() {
                                 {/* Column 2 - Last 2 posts */}
                                 <div className='flex flex-col space-y-5 lg:space-y-5 w-full lg:w-[426px]'>
                                     {section2Posts.slice(2, 4).map((post) => (
-                                        <div key={post.id} className="lg:w-[426px] h-[260px] md:h-[360px] rounded-[8px] bg-white shadow-[0_4px_8px_rgba(0,0,0,0.25)] lg:shadow-[0_8px_4px_rgba(0,0,0,0.41)] flex flex-col">
+                                        <Link to={`/newsdetails/${post.id}`} key={post.id} className="lg:w-[426px] h-[260px] md:h-[360px] rounded-[8px] bg-white shadow-[0_4px_8px_rgba(0,0,0,0.25)] lg:shadow-[0_8px_4px_rgba(0,0,0,0.41)] flex flex-col">
                                             <div className="relative">
                                                 {imageLoadingStates[post.id] && (
                                                     <div className="absolute inset-0 flex items-center justify-center bg-gray-200 rounded-t-[8px]">
@@ -1720,13 +1717,8 @@ export default function Home() {
                                                     </p>
                                                 </div>
 
-                                                <div className='flex justify-between w-full'>
-                                                    <Link
-                                                        to={`/newsdetails/${post.id}`}
-                                                        className='text-[var(--Gray,#8A8A8A)] cursor-pointer ms-2 lg:ms-4 text-right font-[Poppins] text-[11px] lg:text-xs not-italic font-normal leading-normal flex items-center gap-1'
-                                                    >
-                                                        <p>...قراءة المزيد</p>
-                                                    </Link>
+                                                <div className='flex justify-end w-full'>
+                                                   
 
                                                     <div className='text-[var(--Gray,#8A8A8A)] text-right font-[Poppins] text-[10px] lg:text-xs not-italic font-normal leading-normal flex items-center gap-1 lg:gap-2'>
                                                         <p>{formatDate(post.createdAt)}</p>
@@ -1734,13 +1726,13 @@ export default function Home() {
                                                     </div>
                                                 </div>
                                             </div>
-                                        </div>
+                                        </Link>
                                     ))}
                                 </div>
                                 {/* Column 1 - First 2 posts */}
                                 <div className='flex flex-col space-y-5 lg:space-y-5 w-full lg:w-[426px]'>
                                     {section2Posts.slice(0, 2).map((post) => (
-                                        <div key={post.id} className="lg:w-[426px] h-[260px] md:h-[360px] rounded-[8px] bg-white shadow-[0_4px_8px_rgba(0,0,0,0.25)] lg:shadow-[0_8px_4px_rgba(0,0,0,0.41)] flex flex-col">
+                                        <Link to={`/newsdetails/${post.id}`} key={post.id} className="lg:w-[426px] h-[260px] md:h-[360px] rounded-[8px] bg-white shadow-[0_4px_8px_rgba(0,0,0,0.25)] lg:shadow-[0_8px_4px_rgba(0,0,0,0.41)] flex flex-col">
                                             <div className="relative">
                                                 {/* Image Loading Overlay */}
                                                 {imageLoadingStates[post.id] && (
@@ -1774,13 +1766,8 @@ export default function Home() {
                                                 </div>
 
                                                 {/* Post Footer */}
-                                                <div className='flex justify-between w-full'>
-                                                    <Link
-                                                        to={`/newsdetails/${post.id}`}
-                                                        className='text-[var(--Gray,#8A8A8A)] cursor-pointer ms-2 lg:ms-4 text-right font-[Poppins] text-[11px] lg:text-xs not-italic font-normal leading-normal flex items-center gap-1'
-                                                    >
-                                                        <p>...قراءة المزيد</p>
-                                                    </Link>
+                                                <div className='flex justify-end w-full'>
+                                                   
 
                                                     <div className='text-[var(--Gray,#8A8A8A)] text-right font-[Poppins] text-[10px] lg:text-xs not-italic font-normal leading-normal flex items-center gap-1 lg:gap-2'>
                                                         <p>{formatDate(post.createdAt)}</p>
@@ -1788,7 +1775,7 @@ export default function Home() {
                                                     </div>
                                                 </div>
                                             </div>
-                                        </div>
+                                        </Link>
                                     ))}
                                 </div>
 
