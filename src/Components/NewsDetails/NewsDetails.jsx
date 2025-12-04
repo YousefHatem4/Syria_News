@@ -7,6 +7,7 @@ import { Link, useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { userContext } from '../Context/userContext';
 import { BASE_URL } from '../../App';
+import { useUserInfo } from '../hooks/useUserInfo';
 
 export default function NewsDetails() {
     // State management for comment section
@@ -19,6 +20,9 @@ export default function NewsDetails() {
     let { id } = useParams();
     let { userToken } = useContext(userContext);
     const navigate = useNavigate();
+
+    // Get user info from custom hook
+    const { userImage, userName, isAuthenticated } = useUserInfo();
 
     // API States
     const [article, setArticle] = useState(null);
@@ -244,18 +248,11 @@ export default function NewsDetails() {
         }
     };
 
-    // Fetch related posts by category - FIXED VERSION
+    // Fetch related posts by category
     const fetchRelatedPosts = async (categoryName, page = 0) => {
         try {
             setRelatedLoading(true);
 
-            // Build filter object with the exact structure the API expects
-            const filter = {
-                categoryName: categoryName,
-                status: 'approved'
-            };
-
-            // Option 2: If the API requires the exact object structure, send it as form data
             const formData = new FormData();
             formData.append('categoryName', categoryName);
             formData.append('status', 'approved');
@@ -281,12 +278,6 @@ export default function NewsDetails() {
 
         } catch (err) {
             console.error('Error fetching related posts:', err);
-            // More specific error handling
-            if (err.response?.status === 400) {
-                console.log('Bad request - check filter parameters');
-            } else if (err.response?.status === 404) {
-                console.log('No related posts found for this category');
-            }
             setRelatedPosts([]);
         } finally {
             setRelatedLoading(false);
@@ -338,11 +329,9 @@ export default function NewsDetails() {
                 setCommentText('');
                 setShowCommentInput(false);
 
-                // Set the toast message before showing it
                 setToastMessage('تم إضافة تعليقك بنجاح');
                 setShowToast(true);
 
-                // Hide toast after 3 seconds
                 setTimeout(() => {
                     setShowToast(false);
                 }, 3000);
@@ -393,6 +382,12 @@ export default function NewsDetails() {
 
     // Toggle comment input
     const handleCommentInputToggle = () => {
+        if (!isAuthenticated) {
+            setToastMessage('يجب تسجيل الدخول لإضافة تعليق');
+            setShowToast(true);
+            setTimeout(() => setShowToast(false), 3000);
+            return;
+        }
         setShowCommentInput(!showCommentInput);
     };
 
@@ -573,8 +568,18 @@ export default function NewsDetails() {
                                 )}
 
                                 <div className='flex items-center gap-3 mt-2 sm:mt-0'>
-                                    <h1 className='font-poppins font-normal text-[11px] sm:text-[12px] leading-[100%] tracking-[0%] text-right align-middle text-[#FFFFFF]'>أنت</h1>
-                                    <img src="profile.jpg" className='w-[35px] h-[35px] sm:w-[41px] sm:h-[41px] rounded-[41px] object-cover' alt="profile picture" />
+                                    <h1 className='font-poppins font-normal text-[11px] sm:text-[12px] leading-[100%] tracking-[0%] text-right align-middle text-[#FFFFFF]'>
+                                        {userName || 'أنت'}
+                                    </h1>
+                                    <img
+                                        src={userImage || "profile.jpg"}
+                                        className='w-[35px] h-[35px] sm:w-[41px] sm:h-[41px] rounded-[41px] object-cover'
+                                        alt="profile picture"
+                                        onError={(e) => {
+                                            e.target.onerror = null;
+                                            e.target.src = "profile.jpg";
+                                        }}
+                                    />
                                 </div>
                             </div>
 
@@ -598,6 +603,10 @@ export default function NewsDetails() {
                                                 src={comments[0].user?.imageUrl || "profile.jpg"}
                                                 className='w-[35px] h-[35px] sm:w-[41px] sm:h-[41px] rounded-[41px] object-cover'
                                                 alt="profile picture"
+                                                onError={(e) => {
+                                                    e.target.onerror = null;
+                                                    e.target.src = "profile.jpg";
+                                                }}
                                             />
                                         </div>
                                     </div>
@@ -616,6 +625,10 @@ export default function NewsDetails() {
                                                     src={comment.user?.imageUrl || "profile.jpg"}
                                                     className='w-[35px] h-[35px] sm:w-[41px] sm:h-[41px] rounded-[41px] object-cover'
                                                     alt="profile picture"
+                                                    onError={(e) => {
+                                                        e.target.onerror = null;
+                                                        e.target.src = "profile.jpg";
+                                                    }}
                                                 />
                                             </div>
                                         </div>
@@ -692,7 +705,6 @@ export default function NewsDetails() {
                                                     src={post.imageUrl || "post.jpg"}
                                                     className='w-full h-full rounded-t-[8px] object-cover'
                                                     alt={post.header || "صورة الخبر"}
-
                                                 />
                                             </div>
 
@@ -716,7 +728,6 @@ export default function NewsDetails() {
                                                 </p>
 
                                                 <div className='flex items-center justify-end flex-col-reverse sm:flex-row gap-3 sm:gap-0 mt-auto pt-2'>
-
                                                     <div className='flex items-center gap-3'>
                                                         <h1 className='text-black text-right font-poppins text-[11px] sm:text-[12px] font-normal leading-normal'>
                                                             {post.userName || 'مجهول'}
@@ -725,7 +736,10 @@ export default function NewsDetails() {
                                                             src={post.userImageUrl || "profile.jpg"}
                                                             className='w-[35px] h-[35px] sm:w-[41px] sm:h-[41px] rounded-full object-cover'
                                                             alt={post.publisher?.username || "صورة الناشر"}
-
+                                                            onError={(e) => {
+                                                                e.target.onerror = null;
+                                                                e.target.src = "profile.jpg";
+                                                            }}
                                                         />
                                                     </div>
                                                 </div>
@@ -784,8 +798,6 @@ export default function NewsDetails() {
                         )}
                     </section>
                 </div>
-
-
             </section>
 
             {/* Animation styles */}
