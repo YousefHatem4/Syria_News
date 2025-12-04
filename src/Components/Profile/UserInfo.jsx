@@ -92,8 +92,24 @@ export default function UserInfo({ userProfile, refreshProfile, profileImage, cl
         }
     }, [showToast]);
 
+    // Check if user is new (hasn't completed profile)
+    const isNewUser = () => {
+        return !userProfile?.phoneNumber && !userProfile?.bio && !userProfile?.countryName;
+    };
+
     // Check if any field has changed (including profile image)
     const hasChanges = () => {
+        // If user is new and we have any data or image, allow submission
+        if (isNewUser()) {
+            return (
+                phoneNumber !== '' ||
+                bio !== '' ||
+                countryName !== '' ||
+                profileImage !== null
+            );
+        }
+
+        // For existing users, check against original values
         return (
             phoneNumber !== originalValues.phoneNumber ||
             bio !== originalValues.bio ||
@@ -146,6 +162,7 @@ export default function UserInfo({ userProfile, refreshProfile, profileImage, cl
             formData.append('countryName', englishCountryName || '');
 
             console.log('Submitting profile updates for userId:', userId);
+            console.log('Is new user:', isNewUser());
             console.log('Phone:', phoneNumber);
             console.log('Bio:', bio);
             console.log('Country name (Arabic):', countryName);
@@ -387,8 +404,8 @@ export default function UserInfo({ userProfile, refreshProfile, profileImage, cl
                 {/* btn */}
                 <button
                     type='submit'
-                    disabled={isSubmitting || !hasChanges()}
-                    className={`text-[#1B1D1E] mt-5 md:mt-7 text-center font-[Cairo] text-sm md:text-base not-italic font-semibold leading-normal flex w-full md:w-[738px] py-3 md:pt-[13.8px] md:pr-6 md:pb-[12.8px] md:pl-6 flex-col justify-center items-center rounded-[5px] transition-all duration-300 ${isSubmitting || !hasChanges()
+                    disabled={isSubmitting || (!hasChanges() && !isNewUser())}
+                    className={`text-[#1B1D1E] mt-5 md:mt-7 text-center font-[Cairo] text-sm md:text-base not-italic font-semibold leading-normal flex w-full md:w-[738px] py-3 md:pt-[13.8px] md:pr-6 md:pb-[12.8px] md:pl-6 flex-col justify-center items-center rounded-[5px] transition-all duration-300 ${isSubmitting || (!hasChanges() && !isNewUser())
                         ? 'bg-[#E9C882]/50 cursor-not-allowed'
                         : 'bg-[var(--light-sand-beige-e-9-c-882,#E9C882)] cursor-pointer hover:bg-[#d4b874]'
                         }`}
