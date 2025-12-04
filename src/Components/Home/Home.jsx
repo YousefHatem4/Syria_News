@@ -57,6 +57,11 @@ export default function Home() {
     const [latestNewsLoading, setLatestNewsLoading] = useState(true);
     const [latestNewsError, setLatestNewsError] = useState(null);
 
+    // Ranked/Trending Posts (for المواضيع الرائجة section)
+    const [rankedPosts, setRankedPosts] = useState([]);
+    const [rankedPostsLoading, setRankedPostsLoading] = useState(true);
+    const [rankedPostsError, setRankedPostsError] = useState(null);
+
     // ============ IMAGE LOADING STATES ============
     const [imageLoadingStates, setImageLoadingStates] = useState({}); // Tracks loading state for each post image
 
@@ -90,7 +95,7 @@ export default function Home() {
         'Arts': 'الفنون',
         'Technology': 'التقنية',
         'General': 'عام',
-        'Health':'صحة'
+        'Health': 'صحة'
     };
 
     // ============ API FUNCTIONS ============
@@ -123,6 +128,41 @@ export default function Home() {
             setLatestNewsError('فشل في تحميل أحدث الأخبار');
         } finally {
             setLatestNewsLoading(false);
+        }
+    };
+
+    /**
+     * Fetches Ranked/Trending Posts for المواضيع الرائجة section
+     * Gets top 3 posts by totalViews from /articles/ranked API
+     */
+    const fetchRankedPosts = async () => {
+        try {
+            setRankedPostsLoading(true);
+            setRankedPostsError(null);
+
+            const response = await axios.get(`${BASE_URL}articles/ranked`, {
+                headers: userToken ? {
+                    'Authorization': `Bearer ${userToken}`,
+                    'Accept': 'application/json',
+                } : {
+                    'Accept': 'application/json',
+                }
+            });
+
+            if (response.data && Array.isArray(response.data.content)) {
+                // Sort by totalViews descending and take top 3
+                const sortedPosts = [...response.data.content]
+                    .sort((a, b) => b.totalViews - a.totalViews)
+                    .slice(0, 3);
+                setRankedPosts(sortedPosts);
+            }
+        } catch (err) {
+            console.error('Error fetching ranked posts:', err);
+            setRankedPostsError('فشل في تحميل المواضيع الرائجة');
+            // Fallback to empty array
+            setRankedPosts([]);
+        } finally {
+            setRankedPostsLoading(false);
         }
     };
 
@@ -536,6 +576,7 @@ export default function Home() {
         fetchSection2Posts(0);
         fetchSection3Posts();
         fetchLatestNewsPosts(); // Fetch latest news for left section
+        fetchRankedPosts(); // Fetch ranked posts for trending section
     }, []);
 
     // ============ ARTICLE CREATION FUNCTIONS ============
@@ -1506,7 +1547,7 @@ export default function Home() {
                         )}
                     </div>
 
-                    {/* Trending Topics Card - Keep exact same design */}
+                    {/* Trending Topics Card - UPDATED WITH API DATA */}
                     <div className='h-auto md:h-[223px] w-full self-stretch flex-col p-4 flex rounded-[8px] bg-white shadow-[0_1px_4px_0_rgba(0,0,0,0.25)]'>
                         <div className='flex justify-end'>
                             <div className='text-black font-[tajawal] text-[24px] md:text-[28px] font-bold leading-normal flex items-center gap-2'>
@@ -1515,20 +1556,76 @@ export default function Home() {
                             </div>
                         </div>
 
-                        <div className='flex items-center justify-between mt-6 md:mt-8 '>
-                            <p className='text-[#8A8A8A] text-right font-[poppins] text-[12px] font-normal leading-normal'>1.2k</p>
-                            <h1 className='text-black font-[poppins] text-[16px] md:text-[20px] font-semibold leading-normal'>التقنية_الجديدة #</h1>
-                        </div>
-
-                        <div className='flex items-center justify-between mt-1 '>
-                            <p className='text-[#8A8A8A] text-right font-[poppins] text-[12px] font-normal leading-normal'>856</p>
-                            <h1 className='text-black font-[poppins] text-[16px] md:text-[20px] font-semibold leading-normal'>الاقتصاد_العربي #</h1>
-                        </div>
-
-                        <div className='flex items-center justify-between mt-1 '>
-                            <p className='text-[#8A8A8A] text-right font-[poppins] text-[12px] font-normal leading-normal'>623</p>
-                            <h1 className='text-black font-[poppins] text-[16px] md:text-[20px] font-semibold leading-normal'>أحداث اليوم #</h1>
-                        </div>
+                        {rankedPostsLoading ? (
+                            // Loading State for Trending Topics
+                            <>
+                                <div className='flex items-center justify-between mt-6 md:mt-8'>
+                                    <p className='text-[#8A8A8A] text-right font-[poppins] text-[12px] font-normal leading-normal'>جاري التحميل...</p>
+                                    <h1 className='text-black font-[poppins] text-[16px] md:text-[20px] font-semibold leading-normal'>جاري التحميل...</h1>
+                                </div>
+                                <div className='flex items-center justify-between mt-1'>
+                                    <p className='text-[#8A8A8A] text-right font-[poppins] text-[12px] font-normal leading-normal'>جاري التحميل...</p>
+                                    <h1 className='text-black font-[poppins] text-[16px] md:text-[20px] font-semibold leading-normal'>جاري التحميل...</h1>
+                                </div>
+                                <div className='flex items-center justify-between mt-1'>
+                                    <p className='text-[#8A8A8A] text-right font-[poppins] text-[12px] font-normal leading-normal'>جاري التحميل...</p>
+                                    <h1 className='text-black font-[poppins] text-[16px] md:text-[20px] font-semibold leading-normal'>جاري التحميل...</h1>
+                                </div>
+                            </>
+                        ) : rankedPostsError ? (
+                            // Error State for Trending Topics
+                            <>
+                                <div className='flex items-center justify-between mt-6 md:mt-8'>
+                                    <p className='text-[#8A8A8A] text-right font-[poppins] text-[12px] font-normal leading-normal'>1.2k</p>
+                                    <h1 className='text-black font-[poppins] text-[16px] md:text-[20px] font-semibold leading-normal'>التقنية_الجديدة #</h1>
+                                </div>
+                                <div className='flex items-center justify-between mt-1'>
+                                    <p className='text-[#8A8A8A] text-right font-[poppins] text-[12px] font-normal leading-normal'>856</p>
+                                    <h1 className='text-black font-[poppins] text-[16px] md:text-[20px] font-semibold leading-normal'>الاقتصاد_العربي #</h1>
+                                </div>
+                                <div className='flex items-center justify-between mt-1'>
+                                    <p className='text-[#8A8A8A] text-right font-[poppins] text-[12px] font-normal leading-normal'>623</p>
+                                    <h1 className='text-black font-[poppins] text-[16px] md:text-[20px] font-semibold leading-normal'>أحداث اليوم #</h1>
+                                </div>
+                            </>
+                        ) : rankedPosts.length > 0 ? (
+                            // Success State - Display Top 3 Ranked Posts
+                            <>
+                                {rankedPosts.map((post, index) => (
+                                    <Link
+                                        to={`/newsdetails/${post.id}`}
+                                        key={post.id}
+                                        className='cursor-pointer hover:bg-gray-50 rounded-lg p-2 transition-colors duration-200'
+                                    >
+                                        <div className='flex items-center justify-between'>
+                                            <p className='text-[#8A8A8A] text-right font-[poppins] text-[12px] font-normal leading-normal'>
+                                                {post.totalViews}
+                                            </p>
+                                            <h1 className='text-black font-[poppins] text-[16px] md:text-[20px] font-semibold leading-normal hover:text-[#00844B] transition-colors'>
+                                                {post.header} #
+                                            </h1>
+                                        </div>
+                                      
+                                    </Link>
+                                ))}
+                            </>
+                        ) : (
+                            // Empty State for Trending Topics
+                            <>
+                                <div className='flex items-center justify-between mt-6 md:mt-8'>
+                                    <p className='text-[#8A8A8A] text-right font-[poppins] text-[12px] font-normal leading-normal'>1.2k</p>
+                                    <h1 className='text-black font-[poppins] text-[16px] md:text-[20px] font-semibold leading-normal'>التقنية_الجديدة #</h1>
+                                </div>
+                                <div className='flex items-center justify-between mt-1'>
+                                    <p className='text-[#8A8A8A] text-right font-[poppins] text-[12px] font-normal leading-normal'>856</p>
+                                    <h1 className='text-black font-[poppins] text-[16px] md:text-[20px] font-semibold leading-normal'>الاقتصاد_العربي #</h1>
+                                </div>
+                                <div className='flex items-center justify-between mt-1'>
+                                    <p className='text-[#8A8A8A] text-right font-[poppins] text-[12px] font-normal leading-normal'>623</p>
+                                    <h1 className='text-black font-[poppins] text-[16px] md:text-[20px] font-semibold leading-normal'>أحداث اليوم #</h1>
+                                </div>
+                            </>
+                        )}
                     </div>
                 </section>
 
@@ -1547,54 +1644,54 @@ export default function Home() {
                     ) : section1Posts.length > 0 ? (
                         // Success State - Display Rotating Post
                         <>
-                                    <Link to={`/newsdetails/${section1Posts[currentSection1Index].id}`}>
-                                        <div className="relative">
-                                            {/* Image Loading Overlay */}
-                                            {imageLoadingStates[section1Posts[currentSection1Index]?.id] && (
-                                                <div className="absolute inset-0 flex items-center justify-center bg-gray-200 rounded-t-[8px]">
-                                                    <p className="text-gray-500">جاري تحميل الصورة...</p>
-                                                </div>
-                                            )}
-                                            <img
-                                                src={section1Posts[currentSection1Index].imageUrl || "post.jpg"}
-                                                className={`w-full h-[180px] md:h-[228px] flex-shrink-0 rounded-t-[8px] rounded-b-[0px] object-cover ${imageLoadingStates[section1Posts[currentSection1Index]?.id] ? 'opacity-0' : 'opacity-100'}`}
-                                                alt="post_Photo"
-                                                onLoad={() => handleImageLoad(section1Posts[currentSection1Index].id)}
-                                                onError={() => handleImageError(section1Posts[currentSection1Index].id)}
-                                            />
+                            <Link to={`/newsdetails/${section1Posts[currentSection1Index].id}`}>
+                                <div className="relative">
+                                    {/* Image Loading Overlay */}
+                                    {imageLoadingStates[section1Posts[currentSection1Index]?.id] && (
+                                        <div className="absolute inset-0 flex items-center justify-center bg-gray-200 rounded-t-[8px]">
+                                            <p className="text-gray-500">جاري تحميل الصورة...</p>
                                         </div>
-                                        <div className='flex-col p-4 flex gap-6 md:gap-8'>
-                                            {/* Post Meta Information */}
-                                            <div className='flex items-center justify-end gap-4'>
-                                                <p className='text-[#8A8A8A] text-right font-[poppins] text-[12px] font-normal leading-normal'>
-                                                    {formatDate(section1Posts[currentSection1Index].createdAt)}
-                                                </p>
-                                                <h1 className='flex w-[87px] px-[6px] py-[2px] justify-center items-center gap-2 rounded-[28px] bg-[#00844B] text-white text-[14px] md:text-[16px] font-[tajawal] font-bold leading-normal text-right'>
-                                                    عاجل
-                                                </h1>
-                                            </div>
+                                    )}
+                                    <img
+                                        src={section1Posts[currentSection1Index].imageUrl || "post.jpg"}
+                                        className={`w-full h-[180px] md:h-[228px] flex-shrink-0 rounded-t-[8px] rounded-b-[0px] object-cover ${imageLoadingStates[section1Posts[currentSection1Index]?.id] ? 'opacity-0' : 'opacity-100'}`}
+                                        alt="post_Photo"
+                                        onLoad={() => handleImageLoad(section1Posts[currentSection1Index].id)}
+                                        onError={() => handleImageError(section1Posts[currentSection1Index].id)}
+                                    />
+                                </div>
+                                <div className='flex-col p-4 flex gap-6 md:gap-8'>
+                                    {/* Post Meta Information */}
+                                    <div className='flex items-center justify-end gap-4'>
+                                        <p className='text-[#8A8A8A] text-right font-[poppins] text-[12px] font-normal leading-normal'>
+                                            {formatDate(section1Posts[currentSection1Index].createdAt)}
+                                        </p>
+                                        <h1 className='flex w-[87px] px-[6px] py-[2px] justify-center items-center gap-2 rounded-[28px] bg-[#00844B] text-white text-[14px] md:text-[16px] font-[tajawal] font-bold leading-normal text-right'>
+                                            عاجل
+                                        </h1>
+                                    </div>
 
-                                            {/* Post Title */}
-                                            <h1 className='text-black text-right font-poppins text-[18px] md:text-[20px] font-semibold leading-normal break-words overflow-hidden word-wrap break-word'>
-                                                {section1Posts[currentSection1Index].header}
+                                    {/* Post Title */}
+                                    <h1 className='text-black text-right font-poppins text-[18px] md:text-[20px] font-semibold leading-normal break-words overflow-hidden word-wrap break-word'>
+                                        {section1Posts[currentSection1Index].header}
+                                    </h1>
+
+                                    {/* Post Bio/Description */}
+                                    <p className='text-[#636262] text-right font-tajawal text-[14px] font-normal leading-normal break-words overflow-hidden word-wrap break-word max-h-[72px] overflow-y-auto'>
+                                        {section1Posts[currentSection1Index].bio || 'لا توجد نبذة متاحة'}
+                                    </p>
+
+                                    {/* Post Footer with Read More and Author */}
+                                    <div className='flex items-center justify-end flex-col-reverse md:flex-row gap-4 md:gap-0 md:ms-10'>
+
+                                        <div className='flex items-center gap-4'>
+                                            <h1 className='text-black text-right font-poppins text-[12px] font-normal leading-normal'>
+                                                {section1Posts[currentSection1Index].userName || 'مجهول'}
                                             </h1>
-
-                                            {/* Post Bio/Description */}
-                                            <p className='text-[#636262] text-right font-tajawal text-[14px] font-normal leading-normal break-words overflow-hidden word-wrap break-word max-h-[72px] overflow-y-auto'>
-                                                {section1Posts[currentSection1Index].bio || 'لا توجد نبذة متاحة'}
-                                            </p>
-
-                                            {/* Post Footer with Read More and Author */}
-                                            <div className='flex items-center justify-end flex-col-reverse md:flex-row gap-4 md:gap-0 md:ms-10'>
-                                             
-                                                <div className='flex items-center gap-4'>
-                                                    <h1 className='text-black text-right font-poppins text-[12px] font-normal leading-normal'>
-                                                        {section1Posts[currentSection1Index].userName || 'مجهول'}
-                                                    </h1>
-                                                    <img src={section1Posts[currentSection1Index].userImageUrl} className='w-[41px] h-[41px] rounded-[41px] object-cover' alt="" />
-                                                </div>
-                                            </div>
+                                            <img src={section1Posts[currentSection1Index].userImageUrl} className='w-[41px] h-[41px] rounded-[41px] object-cover' alt="" />
                                         </div>
+                                    </div>
+                                </div>
                             </Link>
                         </>
                     ) : (
@@ -1718,7 +1815,7 @@ export default function Home() {
                                                 </div>
 
                                                 <div className='flex justify-end w-full'>
-                                                   
+
 
                                                     <div className='text-[var(--Gray,#8A8A8A)] text-right font-[Poppins] text-[10px] lg:text-xs not-italic font-normal leading-normal flex items-center gap-1 lg:gap-2'>
                                                         <p>{formatDate(post.createdAt)}</p>
@@ -1767,7 +1864,7 @@ export default function Home() {
 
                                                 {/* Post Footer */}
                                                 <div className='flex justify-end w-full'>
-                                                   
+
 
                                                     <div className='text-[var(--Gray,#8A8A8A)] text-right font-[Poppins] text-[10px] lg:text-xs not-italic font-normal leading-normal flex items-center gap-1 lg:gap-2'>
                                                         <p>{formatDate(post.createdAt)}</p>

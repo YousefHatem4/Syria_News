@@ -181,6 +181,69 @@ export default function NewsDetails() {
         }
     };
 
+    // Handle like functionality
+    const handleLikeToggle = async () => {
+        if (!userToken) {
+            setToastMessage('يجب تسجيل الدخول لإبداء الإعجاب');
+            setShowToast(true);
+            setTimeout(() => setShowToast(false), 3000);
+            return;
+        }
+
+        // Validate UUID
+        if (!isValidUUID(id)) {
+            console.error('Invalid UUID for like:', id);
+            setToastMessage('معرف المقال غير صحيح');
+            setShowToast(true);
+            setTimeout(() => setShowToast(false), 3000);
+            return;
+        }
+
+        try {
+            const response = await axios.post(`${BASE_URL}articles/${id}/likes`, {}, {
+                headers: {
+                    'Authorization': `Bearer ${userToken}`,
+                    'Accept': 'application/json',
+                }
+            });
+
+            if (response.status === 200 || response.status === 201) {
+                // Toggle the like state
+                const newLikeState = !isLiked;
+                setIsLiked(newLikeState);
+
+                // Update the article reacts count
+                if (article) {
+                    setArticle(prevArticle => ({
+                        ...prevArticle,
+                        reacts: newLikeState ?
+                            (prevArticle.reacts || 0) + 1 :
+                            Math.max(0, (prevArticle.reacts || 1) - 1)
+                    }));
+                }
+
+                // Show success message
+                setToastMessage(newLikeState ? 'تم الإعجاب بالمقال' : 'تم إلغاء الإعجاب');
+                setShowToast(true);
+                setTimeout(() => setShowToast(false), 3000);
+            }
+        } catch (error) {
+            console.error('Error toggling like:', error);
+
+            // Handle specific error cases
+            if (error.response?.status === 401) {
+                setToastMessage('يجب تسجيل الدخول لإبداء الإعجاب');
+            } else if (error.response?.status === 404) {
+                setToastMessage('المقال غير موجود');
+            } else {
+                setToastMessage('فشل في تحديث الإعجاب');
+            }
+
+            setShowToast(true);
+            setTimeout(() => setShowToast(false), 3000);
+        }
+    };
+
     // Fetch related posts by category - FIXED VERSION
     const fetchRelatedPosts = async (categoryName, page = 0) => {
         try {
@@ -191,8 +254,6 @@ export default function NewsDetails() {
                 categoryName: categoryName,
                 status: 'approved'
             };
-
-           
 
             // Option 2: If the API requires the exact object structure, send it as form data
             const formData = new FormData();
@@ -325,11 +386,6 @@ export default function NewsDetails() {
         return buttons;
     };
 
-    // Toggle like functionality
-    const handleLikeToggle = () => {
-        setIsLiked(!isLiked);
-    };
-
     // Toggle show all comments
     const handleShowAllComments = () => {
         setShowAllComments(!showAllComments);
@@ -383,9 +439,9 @@ export default function NewsDetails() {
                 </div>
             )}
 
-            <section className='bg-[linear-gradient(164deg,#004025_-0.36%,rgba(255,255,255,0.80)_34.44%,rgba(0,64,37,0.50)_101.6%)] h-auto relative flex items-center flex-col pb-10 pt-10 md:pt-0'>
+            <section className='bg-[linear-gradient(164deg,#004025_-0.36%,rgba(255,255,255,0.80)_34.44%,rgba(0,64,37,0.50)_101.6%)] h-auto relative flex items-center flex-col pb-10 pt-30 md:pt-0'>
                 {/* breadcrumb navigation */}
-                <section className='flex items-center gap-2 sm:gap-3 absolute top-30 sm:top-24 md:top-28 lg:top-32 xl:top-35 left-4 sm:left-6 md:left-8 lg:left-12 xl:left-15'>
+                <section className='flex items-center gap-2 sm:gap-3 absolute top-50 sm:top-24 md:top-28 lg:top-32 xl:top-35 left-4 sm:left-6 md:left-8 lg:left-12 xl:left-15'>
                     <Link to={'/'} className='font-poppins text-[14px] sm:text-[16px] md:text-[18px] lg:text-[20px] font-semibold leading-normal text-white'>الصفحه الرئيسه </Link>
                     <FontAwesomeIcon icon={faAngleRight} className='text-white text-xs sm:text-sm md:text-base'></FontAwesomeIcon>
                     <h1 className='font-poppins text-[14px] sm:text-[16px] md:text-[18px] lg:text-[20px] font-semibold leading-normal text-[#00341E]'>تفاصيل الخبر </h1>
@@ -415,13 +471,13 @@ export default function NewsDetails() {
                         <div className='flex flex-wrap items-center gap-3 sm:gap-4 md:gap-4'>
                             <div className="w-auto flex flex-row-reverse justify-between gap-1 items-center font-cairo font-normal text-[12px] sm:text-[13px] md:text-[14.4px] leading-[20px] sm:leading-[22px] md:leading-[24.48px] text-[#E9C882]">
                                 <FontAwesomeIcon icon={faEye}></FontAwesomeIcon>
-                                <span>100+</span>
+                                <span>{article.views}+</span>
                                 <span>مشاهدة</span>
                             </div>
 
                             <div className="w-auto flex flex-row-reverse justify-between gap-1 items-center font-cairo font-normal text-[12px] sm:text-[13px] md:text-[14.4px] leading-[20px] sm:leading-[22px] md:leading-[24.48px] text-[#E9C882]">
                                 <FontAwesomeIcon icon={faThumbsUp}></FontAwesomeIcon>
-                                <span>{article.reactions?.length || 0}</span>
+                                <span>{article.reacts || 0}</span>
                                 <span>تفاعلات</span>
                             </div>
 
@@ -612,7 +668,7 @@ export default function NewsDetails() {
                             )}
                         </div>
                     </div>
-                  
+
                     <section className='px-4 sm:px-6 md:px-8 lg:px-10 mt-8 sm:mt-9 md:mt-10'>
                         {/* title */}
                         <div className='flex flex-col items-end'>
@@ -636,7 +692,7 @@ export default function NewsDetails() {
                                                     src={post.imageUrl || "post.jpg"}
                                                     className='w-full h-full rounded-t-[8px] object-cover'
                                                     alt={post.header || "صورة الخبر"}
-                                                 
+
                                                 />
                                             </div>
 
@@ -660,7 +716,7 @@ export default function NewsDetails() {
                                                 </p>
 
                                                 <div className='flex items-center justify-end flex-col-reverse sm:flex-row gap-3 sm:gap-0 mt-auto pt-2'>
-                                                 
+
                                                     <div className='flex items-center gap-3'>
                                                         <h1 className='text-black text-right font-poppins text-[11px] sm:text-[12px] font-normal leading-normal'>
                                                             {post.userName || 'مجهول'}
@@ -669,7 +725,7 @@ export default function NewsDetails() {
                                                             src={post.userImageUrl || "profile.jpg"}
                                                             className='w-[35px] h-[35px] sm:w-[41px] sm:h-[41px] rounded-full object-cover'
                                                             alt={post.publisher?.username || "صورة الناشر"}
-                                                            
+
                                                         />
                                                     </div>
                                                 </div>
