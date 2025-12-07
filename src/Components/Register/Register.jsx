@@ -32,18 +32,18 @@ export default function Register() {
     };
 
     const validationSchema = Yup.object({
-        // name: Yup.string()
-        //     .required('الإسم الكامل مطلوب')
-        //     .min(3, 'يجب أن يكون الإسم على الأقل 3 أحرف'),
-        // email: Yup.string()
-        //     .email('البريد الإلكتروني غير صحيح')
-        //     .required('البريد الإلكتروني مطلوب'),
-        // password: Yup.string()
-        //     .required('كلمة المرور مطلوبة')
-        //     .min(6, 'يجب أن تكون كلمة المرور على الأقل 6 أحرف'),
-        // confirmPassword: Yup.string()
-        //     .oneOf([Yup.ref('password'), null], 'كلمات المرور غير متطابقة')
-        //     .required('تأكيد كلمة المرور مطلوب')
+        userName: Yup.string()
+            .required('الإسم الكامل مطلوب')
+            .min(3, 'يجب أن يكون الإسم على الأقل 3 أحرف'),
+        email: Yup.string()
+            .email('البريد الإلكتروني غير صحيح')
+            .required('البريد الإلكتروني مطلوب'),
+        password: Yup.string()
+            .required('كلمة المرور مطلوبة')
+            .min(6, 'يجب أن تكون كلمة المرور على الأقل 6 أحرف'),
+        confirmPassword: Yup.string()
+            .oneOf([Yup.ref('password'), null], 'كلمات المرور غير متطابقة')
+            .required('تأكيد كلمة المرور مطلوب')
     });
 
     async function register(values, { setSubmitting, resetForm }) {
@@ -55,14 +55,51 @@ export default function Register() {
 
         setIsSubmitting(true);
         setRegistrationError(null);
+        setRegistrationSuccess(false);
 
         try {
             let { data } = await axios.post(`${BASE_URL}auth/register`, values);
+
+            // Reset form on successful registration
+            resetForm();
+            setRegistrationSuccess(true);
+            setRegistrationError(null);
+
+            // Clear success message after 3 seconds and redirect
             setTimeout(() => {
-                navigate('/login')
-            }, 2000);
+                setRegistrationSuccess(false);
+                navigate('/login');
+            }, 3000);
+
         } catch (error) {
             console.log(error);
+
+            // Handle different types of error responses
+            if (error.response) {
+                // The request was made and the server responded with a status code
+                // that falls out of the range of 2xx
+                const errorData = error.response.data;
+
+                // Display the error message from the API response
+                if (errorData.message) {
+                    setRegistrationError(errorData.message);
+                } else if (errorData.error) {
+                    setRegistrationError(errorData.error);
+                } else {
+                    setRegistrationError("حدث خطأ أثناء التسجيل. يرجى المحاولة مرة أخرى.");
+                }
+            } else if (error.request) {
+                // The request was made but no response was received
+                setRegistrationError("لا يمكن الاتصال بالخادم. يرجى التحقق من اتصالك بالإنترنت.");
+            } else {
+                // Something happened in setting up the request that triggered an Error
+                setRegistrationError("حدث خطأ غير متوقع. يرجى المحاولة مرة أخرى.");
+            }
+
+            setRegistrationSuccess(false);
+        } finally {
+            setIsSubmitting(false);
+            setSubmitting(false);
         }
     }
 
@@ -71,8 +108,9 @@ export default function Register() {
             userName: "",
             password: "",
             email: "",
+            confirmPassword: "",
         },
-
+        validationSchema: validationSchema,
         onSubmit: register
     });
 
@@ -198,7 +236,9 @@ export default function Register() {
                                         className="bg-gray-50 border focus:outline-none focus:border-[#00844B] border-gray-300 text-[#000000] text-sm my-Tajawal-text rounded-lg block w-full h-[40px] pr-10 pl-10 shadow-[inset_0px_2px_3.6px_#00000020]"
                                         placeholder="اعد إدخل كلمة المرور"
                                         dir="rtl"
-
+                                        onChange={formik.handleChange}
+                                        onBlur={formik.handleBlur}
+                                        value={formik.values.confirmPassword}
                                     />
                                     <FontAwesomeIcon
                                         icon={showConfirmPassword ? faEye : faEyeSlash}

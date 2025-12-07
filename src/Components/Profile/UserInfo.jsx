@@ -21,6 +21,14 @@ export default function UserInfo({ userProfile, refreshProfile, profileImage, cl
         countryName: ''
     });
 
+    // Track which fields have been modified by the user
+    const [modifiedFields, setModifiedFields] = useState({
+        phoneNumber: false,
+        bio: false,
+        countryName: false,
+        profileImage: false
+    });
+
     let { userToken, userId } = useContext(userContext);
 
     // Country mapping - Arabic names to English codes/names
@@ -81,8 +89,26 @@ export default function UserInfo({ userProfile, refreshProfile, profileImage, cl
                 bio: userBio,
                 countryName: arabicCountryName
             });
+
+            // Reset modified fields when profile loads
+            setModifiedFields({
+                phoneNumber: false,
+                bio: false,
+                countryName: false,
+                profileImage: false
+            });
         }
     }, [userProfile]);
+
+    // Reset modified fields when profileImage changes from parent
+    useEffect(() => {
+        if (profileImage) {
+            setModifiedFields(prev => ({
+                ...prev,
+                profileImage: true
+            }));
+        }
+    }, [profileImage]);
 
     // Show toast notification
     useEffect(() => {
@@ -97,25 +123,35 @@ export default function UserInfo({ userProfile, refreshProfile, profileImage, cl
         return !userProfile?.phoneNumber && !userProfile?.bio && !userProfile?.countryName;
     };
 
+    // Handle field changes and track modifications
+    const handlePhoneNumberChange = (value) => {
+        setPhoneNumber(value);
+        setModifiedFields(prev => ({
+            ...prev,
+            phoneNumber: value !== originalValues.phoneNumber
+        }));
+    };
+
+    const handleBioChange = (value) => {
+        setBio(value);
+        setModifiedFields(prev => ({
+            ...prev,
+            bio: value !== originalValues.bio
+        }));
+    };
+
+    const handleCountryNameChange = (value) => {
+        setCountryName(value);
+        setModifiedFields(prev => ({
+            ...prev,
+            countryName: value !== originalValues.countryName
+        }));
+    };
+
     // Check if any field has changed (including profile image)
     const hasChanges = () => {
-        // If user is new and we have any data or image, allow submission
-        if (isNewUser()) {
-            return (
-                phoneNumber !== '' ||
-                bio !== '' ||
-                countryName !== '' ||
-                profileImage !== null
-            );
-        }
-
-        // For existing users, check against original values
-        return (
-            phoneNumber !== originalValues.phoneNumber ||
-            bio !== originalValues.bio ||
-            countryName !== originalValues.countryName ||
-            profileImage !== null
-        );
+        // Check if any field is modified
+        return Object.values(modifiedFields).some(value => value === true);
     };
 
     // Convert Arabic country name to English for API
@@ -123,7 +159,7 @@ export default function UserInfo({ userProfile, refreshProfile, profileImage, cl
         return countryMapping[arabicName] || arabicName;
     };
 
-    // Handle form submission - SENDS ALL FIELDS INCLUDING IMAGE
+    // Handle form submission - SENDS ONLY CHANGED FIELDS
     const handleSubmit = async (e) => {
         e.preventDefault();
 
@@ -147,30 +183,46 @@ export default function UserInfo({ userProfile, refreshProfile, profileImage, cl
 
             const formData = new FormData();
 
-            // Append profile image if it exists (from Profile component)
-            if (profileImage) {
+            // Append profile image ONLY if it's modified (from Profile component)
+            if (modifiedFields.profileImage && profileImage) {
                 formData.append('file', profileImage);
-                console.log('Appending profile image to FormData');
+                console.log('Appending profile image to FormData (modified)');
             }
 
-            // ALWAYS APPEND ALL FIELDS (not just changed ones)
-            formData.append('phoneNumber', phoneNumber || '');
-            formData.append('bio', bio || '');
+            // Append fields ONLY if they are modified
+            if (modifiedFields.phoneNumber) {
+                formData.append('phoneNumber', phoneNumber || '');
+                console.log('Appending phoneNumber (modified):', phoneNumber);
+            }
 
-            // Convert Arabic country name to English for API
-            const englishCountryName = getEnglishCountryName(countryName);
-            formData.append('countryName', englishCountryName || '');
+            if (modifiedFields.bio) {
+                formData.append('bio', bio || '');
+                console.log('Appending bio (modified):', bio);
+            }
+
+            // Append country name ONLY if it's modified
+            if (modifiedFields.countryName) {
+                // Convert Arabic country name to English for API
+                const englishCountryName = getEnglishCountryName(countryName);
+                formData.append('countryName', englishCountryName || '');
+                console.log('Appending countryName (modified - Arabic):', countryName);
+                console.log('Appending countryName (modified - English):', englishCountryName);
+            }
 
             console.log('Submitting profile updates for userId:', userId);
             console.log('Is new user:', isNewUser());
-            console.log('Phone:', phoneNumber);
-            console.log('Bio:', bio);
-            console.log('Country name (Arabic):', countryName);
-            console.log('Country name (English):', englishCountryName);
-            console.log('Has profile image:', !!profileImage);
+            console.log('Modified fields:', modifiedFields);
             console.log('FormData contents:');
             for (let [key, value] of formData.entries()) {
                 console.log(key, value);
+            }
+
+            // Check if we have anything to send
+            if (formData.entries().next().done) {
+                setToastMessage('لا توجد تغييرات لحفظها');
+                setShowToast(true);
+                setIsSubmitting(false);
+                return;
             }
 
             const response = await axios.post(
@@ -193,13 +245,21 @@ export default function UserInfo({ userProfile, refreshProfile, profileImage, cl
 
             // Update original values after successful save
             setOriginalValues({
-                phoneNumber,
-                bio,
-                countryName
+                phoneNumber: modifiedFields.phoneNumber ? phoneNumber : originalValues.phoneNumber,
+                bio: modifiedFields.bio ? bio : originalValues.bio,
+                countryName: modifiedFields.countryName ? countryName : originalValues.countryName
+            });
+
+            // Reset modified fields
+            setModifiedFields({
+                phoneNumber: false,
+                bio: false,
+                countryName: false,
+                profileImage: false
             });
 
             // Clear profile image after successful upload
-            if (profileImage && clearProfileImage) {
+            if (modifiedFields.profileImage && profileImage && clearProfileImage) {
                 clearProfileImage();
             }
 
@@ -320,8 +380,8 @@ export default function UserInfo({ userProfile, refreshProfile, profileImage, cl
                         type="tel"
                         id="tel"
                         value={phoneNumber}
-                        onChange={(e) => setPhoneNumber(e.target.value)}
-                        className="text-white flex w-full md:w-[738px] py-3 md:py-[13.8px] px-3 md:px-[17px] justify-center items-start rounded-[5px] border border-[rgba(233,200,130,0.20)] bg-[rgba(255,255,255,0.05)] text-right font-[Cairo] text-sm md:text-base not-italic font-normal leading-normal focus:outline-none focus:border-[#E9C882]"
+                        onChange={(e) => handlePhoneNumberChange(e.target.value)}
+                        className={`text-white flex w-full md:w-[738px] py-3 md:py-[13.8px] px-3 md:px-[17px] justify-center items-start rounded-[5px] border ${modifiedFields.phoneNumber ? 'border-[#E9C882]' : 'border-[rgba(233,200,130,0.20)]'} bg-[rgba(255,255,255,0.05)] text-right font-[Cairo] text-sm md:text-base not-italic font-normal leading-normal focus:outline-none focus:border-[#E9C882]`}
                         placeholder="+963 123 456 789"
                     />
                 </div>
@@ -334,8 +394,8 @@ export default function UserInfo({ userProfile, refreshProfile, profileImage, cl
                             id="country"
                             size="1"
                             value={countryName}
-                            onChange={(e) => setCountryName(e.target.value)}
-                            className="text-white appearance-none flex w-full h-[48px] md:h-[50px] py-3 md:py-[13.8px] px-3 md:px-[17px] pr-12 md:pr-5 justify-center items-start rounded-[5px] border border-[rgba(233,200,130,0.20)] bg-[rgba(255,255,255,0.05)] hover:bg-[rgba(255,255,255,0.08)] hover:border-[rgba(233,200,130,0.30)] text-right font-[Cairo] text-sm md:text-base not-italic font-normal leading-normal transition-all duration-200 cursor-pointer focus:outline-none focus:border-[rgba(233,200,130,0.40)] focus:bg-[rgba(255,255,255,0.08)]"
+                            onChange={(e) => handleCountryNameChange(e.target.value)}
+                            className={`text-white appearance-none flex w-full h-[48px] md:h-[50px] py-3 md:py-[13.8px] px-3 md:px-[17px] pr-12 md:pr-5 justify-center items-start rounded-[5px] border ${modifiedFields.countryName ? 'border-[#E9C882]' : 'border-[rgba(233,200,130,0.20)]'} bg-[rgba(255,255,255,0.05)] hover:bg-[rgba(255,255,255,0.08)] hover:border-[rgba(233,200,130,0.30)] text-right font-[Cairo] text-sm md:text-base not-italic font-normal leading-normal transition-all duration-200 cursor-pointer focus:outline-none focus:border-[rgba(233,200,130,0.40)] focus:bg-[rgba(255,255,255,0.08)]`}
                             style={{
                                 backgroundImage: 'none',
                                 overflow: 'hidden'
@@ -395,8 +455,8 @@ export default function UserInfo({ userProfile, refreshProfile, profileImage, cl
                         id="message"
                         rows="4"
                         value={bio}
-                        onChange={(e) => setBio(e.target.value)}
-                        className="text-white h-[100px] md:h-[134.5px] resize-none flex w-full md:w-[738px] py-3 md:py-[13.8px] px-3 md:px-[17px] justify-center items-start rounded-[5px] border border-[rgba(233,200,130,0.20)] bg-[rgba(255,255,255,0.05)] text-right font-[Cairo] text-sm md:text-base not-italic font-normal leading-normal focus:outline-none focus:border-[#E9C882]"
+                        onChange={(e) => handleBioChange(e.target.value)}
+                        className={`text-white h-[100px] md:h-[134.5px] resize-none flex w-full md:w-[738px] py-3 md:py-[13.8px] px-3 md:px-[17px] justify-center items-start rounded-[5px] border ${modifiedFields.bio ? 'border-[#E9C882]' : 'border-[rgba(233,200,130,0.20)]'} bg-[rgba(255,255,255,0.05)] text-right font-[Cairo] text-sm md:text-base not-italic font-normal leading-normal focus:outline-none focus:border-[#E9C882]`}
                         placeholder="اكتب نبذة عنك..."
                     ></textarea>
                 </div>
@@ -404,8 +464,8 @@ export default function UserInfo({ userProfile, refreshProfile, profileImage, cl
                 {/* btn */}
                 <button
                     type='submit'
-                    disabled={isSubmitting || (!hasChanges() && !isNewUser())}
-                    className={`text-[#1B1D1E] mt-5 md:mt-7 text-center font-[Cairo] text-sm md:text-base not-italic font-semibold leading-normal flex w-full md:w-[738px] py-3 md:pt-[13.8px] md:pr-6 md:pb-[12.8px] md:pl-6 flex-col justify-center items-center rounded-[5px] transition-all duration-300 ${isSubmitting || (!hasChanges() && !isNewUser())
+                    disabled={isSubmitting || !hasChanges()}
+                    className={`text-[#1B1D1E] mt-5 md:mt-7 text-center font-[Cairo] text-sm md:text-base not-italic font-semibold leading-normal flex w-full md:w-[738px] py-3 md:pt-[13.8px] md:pr-6 md:pb-[12.8px] md:pl-6 flex-col justify-center items-center rounded-[5px] transition-all duration-300 ${isSubmitting || !hasChanges()
                         ? 'bg-[#E9C882]/50 cursor-not-allowed'
                         : 'bg-[var(--light-sand-beige-e-9-c-882,#E9C882)] cursor-pointer hover:bg-[#d4b874]'
                         }`}

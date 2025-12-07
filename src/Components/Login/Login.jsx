@@ -310,16 +310,7 @@ export default function Login() {
                                 {!isSubmitting && <FontAwesomeIcon icon={faUserPlus} className="text-white text-[12px] ms-2" />}
                             </button>
 
-                            {/* Return to home button if not coming from comment */}
-                            {!isReturningFromComment && (
-                                <button
-                                    type="button"
-                                    onClick={() => navigate('/')}
-                                    className='w-full sm:w-[350px] md:w-[425px] h-[40px] bg-gray-200 text-gray-700 text-[12px] rounded-sm hover:bg-gray-300 transition duration-300 mb-4'
-                                >
-                                    العودة للصفحة الرئيسية
-                                </button>
-                            )}
+                         
                         </form>
 
                         {/* Registration Link */}
