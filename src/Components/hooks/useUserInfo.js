@@ -15,6 +15,7 @@ export const useUserInfo = () => {
     email: "",
     userId: "",
     role: "",
+    numOfArticles: "0",
     isAuthenticated: false,
   });
 
@@ -25,6 +26,11 @@ export const useUserInfo = () => {
         ...info,
         isAuthenticated: true,
       });
+
+      // Also store numOfArticles in localStorage for persistence
+      if (info.numOfArticles) {
+        localStorage.setItem("userNumOfArticles", info.numOfArticles);
+      }
     } else {
       // Try to get from localStorage as fallback
       const storedToken = localStorage.getItem("userToken");
@@ -35,12 +41,16 @@ export const useUserInfo = () => {
           isAuthenticated: true,
         });
       } else {
+        // Try to get numOfArticles from localStorage if token is not available
+        const storedNumOfArticles =
+          localStorage.getItem("userNumOfArticles") || "0";
         setUserInfo({
           userImage: "",
           userName: "",
           email: "",
           userId: "",
           role: "",
+          numOfArticles: storedNumOfArticles,
           isAuthenticated: false,
         });
       }

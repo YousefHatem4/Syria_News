@@ -11,6 +11,7 @@ import LastPosts from './LastPosts';
 import axios from 'axios';
 import { userContext } from '../Context/userContext';
 import { BASE_URL } from '../../App';
+import { useUserInfo } from '../hooks/useUserInfo'; // Add this import
 
 export default function Profile() {
     const [info, setInfo] = useState(true);
@@ -29,6 +30,9 @@ export default function Profile() {
 
     let { userToken, userId } = useContext(userContext);
 
+    // Use the useUserInfo hook to get numOfArticles from JWT token
+    const { userImage, userName, email, numOfArticles } = useUserInfo();
+
     // Get user ID from context or localStorage
     const getUserId = () => {
         return userId || localStorage.getItem('userId');
@@ -38,6 +42,28 @@ export default function Profile() {
     const getUserRole = () => {
         const role = localStorage.getItem('userRole');
         return role || 'USER';
+    };
+
+    // Get numOfArticles from JWT token (via useUserInfo) or localStorage
+    const getNumOfArticles = () => {
+        // First try from useUserInfo hook (from JWT token)
+        if (numOfArticles && numOfArticles !== "0") {
+            return numOfArticles;
+        }
+
+        // Then try from localStorage
+        const storedNumOfArticles = localStorage.getItem('userNumOfArticles');
+        if (storedNumOfArticles) {
+            return storedNumOfArticles;
+        }
+
+        // Then try from userProfile API response
+        if (userProfile?.postsCount) {
+            return userProfile.postsCount;
+        }
+
+        // Default fallback
+        return "0";
     };
 
     // Fetch user profile data
@@ -90,6 +116,9 @@ export default function Profile() {
                     }
                 }
                 setProfileImagePreview(imageUrl);
+            } else if (userImage) {
+                // Use image from JWT token if API doesn't return one
+                setProfileImagePreview(userImage);
             }
         } catch (error) {
             console.error('Error fetching user profile:', error);
@@ -115,6 +144,9 @@ export default function Profile() {
                         }
                     }
                     setProfileImagePreview(imageUrl);
+                } else if (userImage) {
+                    // Use image from JWT token if API doesn't return one
+                    setProfileImagePreview(userImage);
                 }
             } else {
                 setError('فشل في تحميل بيانات الملف الشخصي');
@@ -173,6 +205,9 @@ export default function Profile() {
 
     // Check if user is admin
     const isAdmin = userRole === 'ADMIN';
+
+    // Get the number of articles
+    const userNumOfArticles = getNumOfArticles();
 
     if (loading) {
         return (
@@ -235,13 +270,15 @@ export default function Profile() {
 
                 {/* info of user */}
                 <h1 className='text-[#E9C882] text-right font-[Tajawal] text-[24px] md:text-[28px] not-italic font-bold leading-normal mt-6'>
-                    {userProfile?.userName || 'أحمد محمد'}
+                    {userName || userProfile?.userName || 'أحمد محمد'}
                 </h1>
                 <p className='text-[#8A8A8A] text-right font-[Cairo] text-[14px] md:text-[16px] not-italic font-normal leading-[27.2px] mt-3'>
-                    {userProfile?.email || 'ahmed@example.com'}
+                    {email || userProfile?.email || 'ahmed@example.com'}
                 </p>
+
+                {/* Number of posts section - Updated to use numOfArticles from JWT token */}
                 <h1 className='text-[#E9C882] text-center font-[Poppins] text-[18px] md:text-[20px] not-italic font-semibold leading-normal mt-7'>
-                    {userProfile?.postsCount || '47'}
+                    {userNumOfArticles}
                 </h1>
                 <p className='text-[#8A8A8A] text-center font-[Tajawal] text-[12px] md:text-[14px] not-italic font-normal leading-normal -mt-2'>منشور</p>
                 <div className='w-[90%] md:w-[75.5%] h-[1px] bg-[rgba(233,200,130,0.45)] my-8 md:my-12'></div>

@@ -42,6 +42,7 @@ export const extractUserInfo = (token) => {
       email: "",
       userId: "",
       role: "",
+      numOfArticles: "0",
     };
   }
 
@@ -51,5 +52,6 @@ export const extractUserInfo = (token) => {
     email: decoded.sub || "",
     userId: decoded.userId || "",
     role: decoded.role?.[0]?.authority || "",
+    numOfArticles: decoded.numOfArticles || "0",
   };
 };
