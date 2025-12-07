@@ -10,14 +10,19 @@ import { BASE_URL } from '../../App';
 import { useUserInfo } from '../hooks/useUserInfo';
 
 export default function NewsDetails() {
+    let { id } = useParams();
     // State management for comment section
-    const [isLiked, setIsLiked] = useState(false);
+    const [isLiked, setIsLiked] = useState(() => {
+        // Initialize from localStorage
+        const savedLikes = JSON.parse(localStorage.getItem('articleLikes') || '{}');
+        return savedLikes[id] || false;
+    });
     const [showAllComments, setShowAllComments] = useState(false);
     const [showCommentInput, setShowCommentInput] = useState(false);
     const [commentText, setCommentText] = useState('');
     const [showToast, setShowToast] = useState(false);
     const [toastMessage, setToastMessage] = useState('');
-    let { id } = useParams();
+
     let { userToken } = useContext(userContext);
     const navigate = useNavigate();
 
@@ -47,6 +52,19 @@ export default function NewsDetails() {
 
     // Check if user is admin
     const isAdmin = role === 'ROLE_ADMIN';
+
+    // Function to save like state to localStorage
+    const saveLikeToLocalStorage = (articleId, likedState) => {
+        const savedLikes = JSON.parse(localStorage.getItem('articleLikes') || '{}');
+        savedLikes[articleId] = likedState;
+        localStorage.setItem('articleLikes', JSON.stringify(savedLikes));
+    };
+
+    // Function to get like state from localStorage
+    const getLikeFromLocalStorage = (articleId) => {
+        const savedLikes = JSON.parse(localStorage.getItem('articleLikes') || '{}');
+        return savedLikes[articleId] || false;
+    };
 
     // Function to check authentication
     const checkAuthentication = () => {
@@ -235,6 +253,10 @@ export default function NewsDetails() {
 
             setArticle(response.data);
 
+            // Check if the current user has liked this article from localStorage
+            const savedLikeState = getLikeFromLocalStorage(id);
+            setIsLiked(savedLikeState);
+
             // Fetch related posts after getting article
             if (response.data.category?.name) {
                 fetchRelatedPosts(response.data.category.name, 0);
@@ -410,7 +432,7 @@ export default function NewsDetails() {
         }
     };
 
-    // Handle like functionality
+    // Handle like functionality - Using separate APIs for like and unlike
     const handleLikeToggle = async () => {
         // Check authentication before proceeding
         if (!checkAuthentication()) {
@@ -428,32 +450,64 @@ export default function NewsDetails() {
         }
 
         try {
-            const response = await axios.post(`${BASE_URL}articles/${id}/likes`, {}, {
-                headers: {
-                    'Authorization': `Bearer ${userToken}`,
-                    'Accept': 'application/json',
+            if (isLiked) {
+                // User has already liked, so unlike using POST /unlike
+                const response = await axios.post(`${BASE_URL}articles/${id}/unlike`, {}, {
+                    headers: {
+                        'Authorization': `Bearer ${userToken}`,
+                        'Accept': 'application/json',
+                    }
+                });
+
+                if (response.status === 200 || response.status === 201 || response.status === 204) {
+                    // Update like state to false
+                    setIsLiked(false);
+
+                    // Save to localStorage
+                    saveLikeToLocalStorage(id, false);
+
+                    // Update the article reacts count
+                    if (article) {
+                        setArticle(prevArticle => ({
+                            ...prevArticle,
+                            reacts: Math.max(0, (prevArticle.reacts || 1) - 1)
+                        }));
+                    }
+
+                    // Show success message
+                    setToastMessage('تم إلغاء الإعجاب');
+                    setShowToast(true);
+                    setTimeout(() => setShowToast(false), 3000);
                 }
-            });
+            } else {
+                // User hasn't liked yet, so like using POST /likes
+                const response = await axios.post(`${BASE_URL}articles/${id}/likes`, {}, {
+                    headers: {
+                        'Authorization': `Bearer ${userToken}`,
+                        'Accept': 'application/json',
+                    }
+                });
 
-            if (response.status === 200 || response.status === 201) {
-                // Toggle the like state
-                const newLikeState = !isLiked;
-                setIsLiked(newLikeState);
+                if (response.status === 200 || response.status === 201) {
+                    // Update like state to true
+                    setIsLiked(true);
 
-                // Update the article reacts count
-                if (article) {
-                    setArticle(prevArticle => ({
-                        ...prevArticle,
-                        reacts: newLikeState ?
-                            (prevArticle.reacts || 0) + 1 :
-                            Math.max(0, (prevArticle.reacts || 1) - 1)
-                    }));
+                    // Save to localStorage
+                    saveLikeToLocalStorage(id, true);
+
+                    // Update the article reacts count
+                    if (article) {
+                        setArticle(prevArticle => ({
+                            ...prevArticle,
+                            reacts: (prevArticle.reacts || 0) + 1
+                        }));
+                    }
+
+                    // Show success message
+                    setToastMessage('تم الإعجاب بالمقال');
+                    setShowToast(true);
+                    setTimeout(() => setShowToast(false), 3000);
                 }
-
-                // Show success message
-                setToastMessage(newLikeState ? 'تم الإعجاب بالمقال' : 'تم إلغاء الإعجاب');
-                setShowToast(true);
-                setTimeout(() => setShowToast(false), 3000);
             }
         } catch (error) {
             console.error('Error toggling like:', error);
@@ -463,6 +517,13 @@ export default function NewsDetails() {
                 redirectToLogin();
             } else if (error.response?.status === 404) {
                 setToastMessage('المقال غير موجود');
+                setShowToast(true);
+                setTimeout(() => setShowToast(false), 3000);
+            } else if (error.response?.status === 409) {
+                // If API returns 409 for conflict (already liked/unliked), sync with localStorage
+                const savedLikeState = getLikeFromLocalStorage(id);
+                setIsLiked(savedLikeState);
+                setToastMessage(savedLikeState ? 'تم الإعجاب بالمقال مسبقاً' : 'لم يتم الإعجاب بالمقال مسبقاً');
                 setShowToast(true);
                 setTimeout(() => setShowToast(false), 3000);
             } else {
@@ -679,6 +740,14 @@ export default function NewsDetails() {
         }
     }, [userToken, id]);
 
+    // Initialize like state from localStorage when component mounts
+    useEffect(() => {
+        if (id) {
+            const savedLikeState = getLikeFromLocalStorage(id);
+            setIsLiked(savedLikeState);
+        }
+    }, [id]);
+
     if (loading) {
         return (
             <div className='bg-[linear-gradient(164deg,#004025_-0.36%,rgba(255,255,255,0.80)_34.44%,rgba(0,64,37,0.50)_101.6%)] h-screen flex items-center justify-center'>
@@ -875,18 +944,51 @@ export default function NewsDetails() {
                                 </div>
                             ) : comments.length > 0 ? (
                                 <>
-                                        {/* Display first comment (always visible) */}
-                                        <div className='w-full min-h-[67px] border-t border-t-[#000000] p-[13px] gap-2 bg-[#2D4639] opacity-100 flex flex-col sm:flex-row items-start sm:items-center justify-between'>
+                                    {/* Display first comment (always visible) */}
+                                    <div className='w-full min-h-[67px] border-t border-t-[#000000] p-[13px] gap-2 bg-[#2D4639] opacity-100 flex flex-col sm:flex-row items-start sm:items-center justify-between'>
+                                        {/* Left side - Delete button for admin only */}
+                                        <div className='flex items-center gap-3 self-start sm:self-auto mb-2 sm:mb-0'>
+                                            {isAdmin && (
+                                                <div
+                                                    className={`text-[#FFFFFFAD] cursor-pointer text-right font-[Poppins] text-[10px] sm:text-[11px] not-italic font-normal leading-normal flex items-center gap-1 hover:text-red-500 transition-colors ${isDeletingComment && deletingCommentId === comments[0].id ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                                    onClick={() => !(isDeletingComment && deletingCommentId === comments[0].id) && handleDeleteComment(comments[0].id)}
+                                                >
+                                                    <p>{isDeletingComment && deletingCommentId === comments[0].id ? 'جاري الحذف...' : 'حذف'}</p>
+                                                    <FontAwesomeIcon
+                                                        className={`${isDeletingComment && deletingCommentId === comments[0].id ? 'text-gray-400' : 'text-[#FFFFFFAD]'} hover:text-red-500 transition-colors`}
+                                                        icon={faTrashCan}
+                                                    />
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        {/* Middle - Comment content */}
+                                        <h1 className='font-poppins font-normal text-[11px] sm:text-[12px] leading-[150%] sm:leading-[100%] tracking-[0%] text-right align-middle text-[#FFFFFF] flex-1 mb-2 sm:mb-0 px-2'>
+                                            {comments[0].commentContent}
+                                        </h1>
+
+                                        {/* Right side - User info */}
+                                        <div className='flex items-center gap-3 self-end sm:self-auto'>
+                                            <h1 className='font-poppins font-normal text-[11px] sm:text-[12px] leading-[100%] tracking-[0%] text-right align-middle text-[#FFFFFF]'>
+                                                {comments[0].user?.userName || 'مستخدم'}
+                                            </h1>
+                                            {renderCommentUserAvatar(comments[0].user, "35px")}
+                                        </div>
+                                    </div>
+
+                                    {/* Display all other comments when toggled */}
+                                    {showAllComments && comments.slice(1).map((comment) => (
+                                        <div key={comment.id} className='w-full min-h-[67px] border-t border-t-[#000000] p-[13px] gap-2 bg-[#2D4639] opacity-100 flex flex-col sm:flex-row items-start sm:items-center justify-between'>
                                             {/* Left side - Delete button for admin only */}
                                             <div className='flex items-center gap-3 self-start sm:self-auto mb-2 sm:mb-0'>
                                                 {isAdmin && (
                                                     <div
-                                                        className={`text-[#FFFFFFAD] cursor-pointer text-right font-[Poppins] text-[10px] sm:text-[11px] not-italic font-normal leading-normal flex items-center gap-1 hover:text-red-500 transition-colors ${isDeletingComment && deletingCommentId === comments[0].id ? 'opacity-50 cursor-not-allowed' : ''}`}
-                                                        onClick={() => !(isDeletingComment && deletingCommentId === comments[0].id) && handleDeleteComment(comments[0].id)}
+                                                        className={`text-[#FFFFFFAD] cursor-pointer text-right font-[Poppins] text-[10px] sm:text-[11px] not-italic font-normal leading-normal flex items-center gap-1 hover:text-red-500 transition-colors ${isDeletingComment && deletingCommentId === comment.id ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                                        onClick={() => !(isDeletingComment && deletingCommentId === comment.id) && handleDeleteComment(comment.id)}
                                                     >
-                                                        <p>{isDeletingComment && deletingCommentId === comments[0].id ? 'جاري الحذف...' : 'حذف'}</p>
+                                                        <p>{isDeletingComment && deletingCommentId === comment.id ? 'جاري الحذف...' : 'حذف'}</p>
                                                         <FontAwesomeIcon
-                                                            className={`${isDeletingComment && deletingCommentId === comments[0].id ? 'text-gray-400' : 'text-[#FFFFFFAD]'} hover:text-red-500 transition-colors`}
+                                                            className={`${isDeletingComment && deletingCommentId === comment.id ? 'text-gray-400' : 'text-[#FFFFFFAD]'} hover:text-red-500 transition-colors`}
                                                             icon={faTrashCan}
                                                         />
                                                     </div>
@@ -895,51 +997,18 @@ export default function NewsDetails() {
 
                                             {/* Middle - Comment content */}
                                             <h1 className='font-poppins font-normal text-[11px] sm:text-[12px] leading-[150%] sm:leading-[100%] tracking-[0%] text-right align-middle text-[#FFFFFF] flex-1 mb-2 sm:mb-0 px-2'>
-                                                {comments[0].commentContent}
+                                                {comment.commentContent}
                                             </h1>
 
                                             {/* Right side - User info */}
                                             <div className='flex items-center gap-3 self-end sm:self-auto'>
                                                 <h1 className='font-poppins font-normal text-[11px] sm:text-[12px] leading-[100%] tracking-[0%] text-right align-middle text-[#FFFFFF]'>
-                                                    {comments[0].user?.userName || 'مستخدم'}
+                                                    {comment.user?.userName || 'مستخدم'}
                                                 </h1>
-                                                {renderCommentUserAvatar(comments[0].user, "35px")}
+                                                {renderCommentUserAvatar(comment.user, "35px")}
                                             </div>
                                         </div>
-
-                                        {/* Display all other comments when toggled */}
-                                        {showAllComments && comments.slice(1).map((comment) => (
-                                            <div key={comment.id} className='w-full min-h-[67px] border-t border-t-[#000000] p-[13px] gap-2 bg-[#2D4639] opacity-100 flex flex-col sm:flex-row items-start sm:items-center justify-between'>
-                                                {/* Left side - Delete button for admin only */}
-                                                <div className='flex items-center gap-3 self-start sm:self-auto mb-2 sm:mb-0'>
-                                                    {isAdmin && (
-                                                        <div
-                                                            className={`text-[#FFFFFFAD] cursor-pointer text-right font-[Poppins] text-[10px] sm:text-[11px] not-italic font-normal leading-normal flex items-center gap-1 hover:text-red-500 transition-colors ${isDeletingComment && deletingCommentId === comment.id ? 'opacity-50 cursor-not-allowed' : ''}`}
-                                                            onClick={() => !(isDeletingComment && deletingCommentId === comment.id) && handleDeleteComment(comment.id)}
-                                                        >
-                                                            <p>{isDeletingComment && deletingCommentId === comment.id ? 'جاري الحذف...' : 'حذف'}</p>
-                                                            <FontAwesomeIcon
-                                                                className={`${isDeletingComment && deletingCommentId === comment.id ? 'text-gray-400' : 'text-[#FFFFFFAD]'} hover:text-red-500 transition-colors`}
-                                                                icon={faTrashCan}
-                                                            />
-                                                        </div>
-                                                    )}
-                                                </div>
-
-                                                {/* Middle - Comment content */}
-                                                <h1 className='font-poppins font-normal text-[11px] sm:text-[12px] leading-[150%] sm:leading-[100%] tracking-[0%] text-right align-middle text-[#FFFFFF] flex-1 mb-2 sm:mb-0 px-2'>
-                                                    {comment.commentContent}
-                                                </h1>
-
-                                                {/* Right side - User info */}
-                                                <div className='flex items-center gap-3 self-end sm:self-auto'>
-                                                    <h1 className='font-poppins font-normal text-[11px] sm:text-[12px] leading-[100%] tracking-[0%] text-right align-middle text-[#FFFFFF]'>
-                                                        {comment.user?.userName || 'مستخدم'}
-                                                    </h1>
-                                                    {renderCommentUserAvatar(comment.user, "35px")}
-                                                </div>
-                                            </div>
-                                        ))}
+                                    ))}
                                     {/* Comments Pagination */}
                                     {commentsTotalPages > 1 && (
                                         <div className='flex gap-2 items-center justify-center mt-4 p-4 bg-[#2D4639]'>
