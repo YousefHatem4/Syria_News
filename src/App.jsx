@@ -36,7 +36,7 @@ const routers = createBrowserRouter([
       { path: "contactus", element: <ContactUs /> },
       { path: "forgetpass", element: <ForgetPass /> },
       { path: "newpass", element: <NewPass /> },
-      { path: "newsdetails/:id", element: <ProtectedRoute><NewsDetails /></ProtectedRoute> },
+      { path: "newsdetails/:id", element: <NewsDetails /> },
       { path: "profile", element: <Profile /> },
       { path: "verfiycode", element: <VerfiyCode /> },
       { path: "more-news", element: <ProtectedRoute><MoreNews /></ProtectedRoute> },

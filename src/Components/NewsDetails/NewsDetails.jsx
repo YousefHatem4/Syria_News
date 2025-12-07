@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useContext } from 'react'
 import style from './NewsDetails.module.css'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faAngleLeft, faAngleRight, faCheckCircle } from '@fortawesome/free-solid-svg-icons';
+import { faAngleLeft, faAngleRight, faCheckCircle, faUser } from '@fortawesome/free-solid-svg-icons';
 import { faThumbsUp, faEye, faCalendar, faComment, faClock } from '@fortawesome/free-regular-svg-icons';
 import { Link, useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
@@ -40,6 +40,141 @@ export default function NewsDetails() {
     const [relatedLoading, setRelatedLoading] = useState(true);
     const [relatedCurrentPage, setRelatedCurrentPage] = useState(0);
     const [relatedTotalPages, setRelatedTotalPages] = useState(0);
+
+    // Function to check authentication
+    const checkAuthentication = () => {
+        return userToken && localStorage.getItem('userToken');
+    };
+
+    // Function to redirect to login with return URL
+    const redirectToLogin = () => {
+        // Store the current article URL and comment text in localStorage
+        const returnUrl = `/newsdetails/${id}`;
+        localStorage.setItem('returnUrl', returnUrl);
+        localStorage.setItem('pendingComment', commentText);
+
+        setToastMessage('يجب تسجيل الدخول أولاً');
+        setShowToast(true);
+        setTimeout(() => {
+            setShowToast(false);
+            navigate('/login', {
+                state: {
+                    from: 'comment',
+                    articleId: id,
+                    commentText: commentText
+                }
+            });
+        }, 1500);
+    };
+
+    // Function to check for pending comment after login
+    const checkForPendingComment = () => {
+        const pendingComment = localStorage.getItem('pendingComment');
+        const returnUrl = localStorage.getItem('returnUrl');
+
+        if (pendingComment && returnUrl && returnUrl.includes(`/newsdetails/${id}`)) {
+            // Set the comment text and show input
+            setCommentText(pendingComment);
+            setShowCommentInput(true);
+
+            // Clear the stored data
+            localStorage.removeItem('pendingComment');
+            localStorage.removeItem('returnUrl');
+
+            // Scroll to comment section
+            setTimeout(() => {
+                const commentsSection = document.getElementById('comments-section');
+                if (commentsSection) {
+                    commentsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
+            }, 500);
+        }
+    };
+
+    // Function to handle image error
+    const handleImageError = (e, isUser = true) => {
+        e.target.onerror = null;
+        if (isUser) {
+            // Hide the image and show user icon with gray background
+            e.target.style.display = 'none';
+            const parentDiv = e.target.parentElement;
+            if (parentDiv) {
+                // Create or show the fallback icon
+                let fallbackDiv = parentDiv.querySelector('.user-fallback');
+                if (!fallbackDiv) {
+                    fallbackDiv = document.createElement('div');
+                    fallbackDiv.className = 'user-fallback w-full h-full flex items-center justify-center bg-gray-300 rounded-full';
+                    const icon = document.createElement('div');
+                    icon.innerHTML = '<svg class="w-1/2 h-1/2 text-gray-600" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd"></path></svg>';
+                    fallbackDiv.appendChild(icon);
+                    parentDiv.appendChild(fallbackDiv);
+                } else {
+                    fallbackDiv.style.display = 'flex';
+                }
+            }
+        } else {
+            // For article images, use a placeholder
+            e.target.src = "placeholder.jpg";
+        }
+    };
+
+    // Function to render user avatar with fallback
+    const renderUserAvatar = (imageUrl, userName, size = "35px") => {
+        const hasImage = imageUrl && imageUrl !== "profile.jpg" && imageUrl !== "guest.jpg";
+
+        if (hasImage) {
+            return (
+                <div className="relative">
+                    <img
+                        src={imageUrl}
+                        className={`w-[${size}] h-[${size}] rounded-full object-cover`}
+                        alt={userName || "صورة المستخدم"}
+                        onError={(e) => handleImageError(e, true)}
+                    />
+                </div>
+            );
+        } else {
+            // Show gray background with user icon
+            return (
+                <div className={`w-[${size}] h-[${size}] rounded-full bg-gray-300 flex items-center justify-center`}>
+                    <FontAwesomeIcon
+                        icon={faUser}
+                        className="text-gray-600 text-lg"
+                    />
+                </div>
+            );
+        }
+    };
+
+    // Function to render comment user avatar
+    const renderCommentUserAvatar = (user, size = "35px") => {
+        const imageUrl = user?.imageUrl;
+        const userName = user?.userName || 'مستخدم';
+        const hasImage = imageUrl && imageUrl !== "profile.jpg";
+
+        if (hasImage) {
+            return (
+                <div className="relative">
+                    <img
+                        src={imageUrl}
+                        className={`w-[${size}] h-[${size}] rounded-full object-cover`}
+                        alt={userName}
+                        onError={(e) => handleImageError(e, true)}
+                    />
+                </div>
+            );
+        } else {
+            // Show gray background with user icon
+            return (
+                <div className={`w-[${size}] h-[${size}] rounded-full bg-gray-300 flex items-center justify-center`}>
+                    <FontAwesomeIcon
+                        icon={faUser}
+                        className="text-gray-600 text-sm"
+                    />
+                </div>
+            );
+        }
+    };
 
     // UUID validation function
     const isValidUUID = (uuid) => {
@@ -149,16 +284,25 @@ export default function NewsDetails() {
 
     // Post new comment
     const postComment = async () => {
-        if (!userToken) {
-            setToastMessage('يجب تسجيل الدخول لإضافة تعليق');
-            setShowToast(true);
-            setTimeout(() => setShowToast(false), 3000);
+        // Check authentication before proceeding
+        if (!checkAuthentication()) {
+            redirectToLogin();
             return false;
         }
 
         // Validate UUID
         if (!isValidUUID(id)) {
             console.error('Invalid UUID for posting comment:', id);
+            setToastMessage('معرف المقال غير صحيح');
+            setShowToast(true);
+            setTimeout(() => setShowToast(false), 3000);
+            return false;
+        }
+
+        if (!commentText.trim()) {
+            setToastMessage('يرجى كتابة تعليق');
+            setShowToast(true);
+            setTimeout(() => setShowToast(false), 3000);
             return false;
         }
 
@@ -181,16 +325,24 @@ export default function NewsDetails() {
             return false;
         } catch (error) {
             console.error('Error posting comment:', error);
+
+            // Handle authentication errors
+            if (error.response?.status === 401) {
+                redirectToLogin();
+            } else {
+                setToastMessage('فشل في إضافة التعليق');
+                setShowToast(true);
+                setTimeout(() => setShowToast(false), 3000);
+            }
             return false;
         }
     };
 
     // Handle like functionality
     const handleLikeToggle = async () => {
-        if (!userToken) {
-            setToastMessage('يجب تسجيل الدخول لإبداء الإعجاب');
-            setShowToast(true);
-            setTimeout(() => setShowToast(false), 3000);
+        // Check authentication before proceeding
+        if (!checkAuthentication()) {
+            redirectToLogin();
             return;
         }
 
@@ -236,15 +388,16 @@ export default function NewsDetails() {
 
             // Handle specific error cases
             if (error.response?.status === 401) {
-                setToastMessage('يجب تسجيل الدخول لإبداء الإعجاب');
+                redirectToLogin();
             } else if (error.response?.status === 404) {
                 setToastMessage('المقال غير موجود');
+                setShowToast(true);
+                setTimeout(() => setShowToast(false), 3000);
             } else {
                 setToastMessage('فشل في تحديث الإعجاب');
+                setShowToast(true);
+                setTimeout(() => setShowToast(false), 3000);
             }
-
-            setShowToast(true);
-            setTimeout(() => setShowToast(false), 3000);
         }
     };
 
@@ -322,6 +475,12 @@ export default function NewsDetails() {
 
     // Handle comment submission
     const handleCommentSubmit = async () => {
+        // Check authentication first
+        if (!checkAuthentication()) {
+            redirectToLogin();
+            return;
+        }
+
         if (commentText.trim() !== '') {
             setIsSubmittingComment(true);
             const success = await postComment();
@@ -332,12 +491,6 @@ export default function NewsDetails() {
                 setToastMessage('تم إضافة تعليقك بنجاح');
                 setShowToast(true);
 
-                setTimeout(() => {
-                    setShowToast(false);
-                }, 3000);
-            } else {
-                setToastMessage('فشل في إضافة التعليق');
-                setShowToast(true);
                 setTimeout(() => {
                     setShowToast(false);
                 }, 3000);
@@ -380,15 +533,30 @@ export default function NewsDetails() {
         setShowAllComments(!showAllComments);
     };
 
-    // Toggle comment input
+    // Toggle comment input - UPDATED WITH AUTH CHECK
     const handleCommentInputToggle = () => {
-        if (!isAuthenticated) {
-            setToastMessage('يجب تسجيل الدخول لإضافة تعليق');
-            setShowToast(true);
-            setTimeout(() => setShowToast(false), 3000);
+        // Check if user is authenticated
+        if (!checkAuthentication()) {
+            // Store that user was trying to add comment
+            localStorage.setItem('wasAddingComment', 'true');
+            redirectToLogin();
             return;
         }
         setShowCommentInput(!showCommentInput);
+    };
+
+    // Handle Enter key press in comment input - UPDATED
+    const handleCommentKeyPress = (e) => {
+        if (e.key === 'Enter') {
+            // Check authentication before handling Enter key
+            if (!checkAuthentication()) {
+                // Store that user was trying to add comment
+                localStorage.setItem('wasAddingComment', 'true');
+                redirectToLogin();
+                return;
+            }
+            handleCommentSubmit();
+        }
     };
 
     // Calculate comments count
@@ -397,12 +565,47 @@ export default function NewsDetails() {
         return article.comments.length.toString();
     };
 
+    // Check for pending comment when component mounts
     useEffect(() => {
         if (id) {
             fetchArticleDetails();
             fetchComments(0);
+
+            // Check if user just returned from login
+            const wasAddingComment = localStorage.getItem('wasAddingComment');
+            const returnUrl = localStorage.getItem('returnUrl');
+
+            if (wasAddingComment === 'true' && returnUrl && returnUrl.includes(`/newsdetails/${id}`)) {
+                // Clear the flag
+                localStorage.removeItem('wasAddingComment');
+
+                // Show comment input automatically
+                setShowCommentInput(true);
+
+                // Scroll to comment section
+                setTimeout(() => {
+                    const commentsSection = document.getElementById('comments-section');
+                    if (commentsSection) {
+                        commentsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    }
+                }, 500);
+
+                // Check for saved comment text
+                const savedComment = localStorage.getItem('pendingComment');
+                if (savedComment) {
+                    setCommentText(savedComment);
+                    localStorage.removeItem('pendingComment');
+                }
+            }
         }
     }, [id]);
+
+    // Check for pending comment when user becomes authenticated
+    useEffect(() => {
+        if (checkAuthentication() && id) {
+            checkForPendingComment();
+        }
+    }, [userToken, id]);
 
     if (loading) {
         return (
@@ -505,7 +708,12 @@ export default function NewsDetails() {
 
                                 {section.imageUrl && (
                                     <div className='w-full sm:w-[95%] md:w-[70%] lg:w-[60%] xl:w-[479px] h-[120px] sm:h-[130px] md:h-[140px] lg:h-[143.33px] rounded-[12px] sm:rounded-[15px] border-l-[3px] sm:border-l-[4px] border-[#00844B] border-r-[3px] sm:border-r-[4px] flex flex-col items-center justify-center gap-2'>
-                                        <img src={section.imageUrl} className='w-full h-full object-cover rounded-[12px] sm:rounded-[15px]' alt={section.header} />
+                                        <img
+                                            src={section.imageUrl}
+                                            className='w-full h-full object-cover rounded-[12px] sm:rounded-[15px]'
+                                            alt={section.header}
+                                            onError={(e) => handleImageError(e, false)}
+                                        />
                                     </div>
                                 )}
                             </React.Fragment>
@@ -560,26 +768,31 @@ export default function NewsDetails() {
                                             type="text"
                                             value={commentText}
                                             onChange={(e) => setCommentText(e.target.value)}
-                                            onKeyPress={(e) => e.key === 'Enter' && handleCommentSubmit()}
+                                            onKeyPress={handleCommentKeyPress}
                                             className='flex-1 h-[34px] p-[8px] gap-2 rounded-[12px] border border-[#8A8A8A] bg-transparent font-poppins font-normal text-[11px] sm:text-[12px] leading-[100%] tracking-[0%] text-right align-middle text-[#FFFFFF] focus:border-[#00844B] focus:outline-none transition-all duration-300'
                                             placeholder='....اكتب تعليقك'
+                                            disabled={!checkAuthentication()}
+                                            autoFocus={showCommentInput && checkAuthentication()}
                                         />
                                     </div>
                                 )}
 
                                 <div className='flex items-center gap-3 mt-2 sm:mt-0'>
                                     <h1 className='font-poppins font-normal text-[11px] sm:text-[12px] leading-[100%] tracking-[0%] text-right align-middle text-[#FFFFFF]'>
-                                        {userName || 'أنت'}
+                                        {checkAuthentication() ? (userName || 'أنت') : 'زائر'}
                                     </h1>
-                                    <img
-                                        src={userImage || "profile.jpg"}
-                                        className='w-[35px] h-[35px] sm:w-[41px] sm:h-[41px] rounded-[41px] object-cover'
-                                        alt="profile picture"
-                                        onError={(e) => {
-                                            e.target.onerror = null;
-                                            e.target.src = "profile.jpg";
-                                        }}
-                                    />
+                                    <div className="relative">
+                                        {checkAuthentication() ? (
+                                            renderUserAvatar(userImage, userName, "35px")
+                                        ) : (
+                                            <div className="w-[35px] h-[35px] sm:w-[41px] sm:h-[41px] rounded-full bg-gray-300 flex items-center justify-center">
+                                                <FontAwesomeIcon
+                                                    icon={faUser}
+                                                    className="text-gray-600 text-sm sm:text-base"
+                                                />
+                                            </div>
+                                        )}
+                                    </div>
                                 </div>
                             </div>
 
@@ -599,15 +812,7 @@ export default function NewsDetails() {
                                             <h1 className='font-poppins font-normal text-[11px] sm:text-[12px] leading-[100%] tracking-[0%] text-right align-middle text-[#FFFFFF]'>
                                                 {comments[0].user?.userName || 'مستخدم'}
                                             </h1>
-                                            <img
-                                                src={comments[0].user?.imageUrl || "profile.jpg"}
-                                                className='w-[35px] h-[35px] sm:w-[41px] sm:h-[41px] rounded-[41px] object-cover'
-                                                alt="profile picture"
-                                                onError={(e) => {
-                                                    e.target.onerror = null;
-                                                    e.target.src = "profile.jpg";
-                                                }}
-                                            />
+                                            {renderCommentUserAvatar(comments[0].user, "35px")}
                                         </div>
                                     </div>
 
@@ -621,15 +826,7 @@ export default function NewsDetails() {
                                                 <h1 className='font-poppins font-normal text-[11px] sm:text-[12px] leading-[100%] tracking-[0%] text-right align-middle text-[#FFFFFF]'>
                                                     {comment.user?.userName || 'مستخدم'}
                                                 </h1>
-                                                <img
-                                                    src={comment.user?.imageUrl || "profile.jpg"}
-                                                    className='w-[35px] h-[35px] sm:w-[41px] sm:h-[41px] rounded-[41px] object-cover'
-                                                    alt="profile picture"
-                                                    onError={(e) => {
-                                                        e.target.onerror = null;
-                                                        e.target.src = "profile.jpg";
-                                                    }}
-                                                />
+                                                {renderCommentUserAvatar(comment.user, "35px")}
                                             </div>
                                         </div>
                                     ))}
@@ -705,6 +902,7 @@ export default function NewsDetails() {
                                                     src={post.imageUrl || "post.jpg"}
                                                     className='w-full h-full rounded-t-[8px] object-cover'
                                                     alt={post.header || "صورة الخبر"}
+                                                    onError={(e) => handleImageError(e, false)}
                                                 />
                                             </div>
 
@@ -732,15 +930,23 @@ export default function NewsDetails() {
                                                         <h1 className='text-black text-right font-poppins text-[11px] sm:text-[12px] font-normal leading-normal'>
                                                             {post.userName || 'مجهول'}
                                                         </h1>
-                                                        <img
-                                                            src={post.userImageUrl || "profile.jpg"}
-                                                            className='w-[35px] h-[35px] sm:w-[41px] sm:h-[41px] rounded-full object-cover'
-                                                            alt={post.publisher?.username || "صورة الناشر"}
-                                                            onError={(e) => {
-                                                                e.target.onerror = null;
-                                                                e.target.src = "profile.jpg";
-                                                            }}
-                                                        />
+                                                        <div className="relative">
+                                                            {post.userImageUrl ? (
+                                                                <img
+                                                                    src={post.userImageUrl}
+                                                                    className='w-[35px] h-[35px] sm:w-[41px] sm:h-[41px] rounded-full object-cover'
+                                                                    alt={post.publisher?.username || "صورة الناشر"}
+                                                                    onError={(e) => handleImageError(e, true)}
+                                                                />
+                                                            ) : (
+                                                                <div className="w-[35px] h-[35px] sm:w-[41px] sm:h-[41px] rounded-full bg-gray-300 flex items-center justify-center">
+                                                                    <FontAwesomeIcon
+                                                                        icon={faUser}
+                                                                        className="text-gray-600 text-sm"
+                                                                    />
+                                                                </div>
+                                                            )}
+                                                        </div>
                                                     </div>
                                                 </div>
                                             </div>
@@ -829,6 +1035,32 @@ export default function NewsDetails() {
                     -webkit-line-clamp: 3;
                     -webkit-box-orient: vertical;
                     overflow: hidden;
+                }
+                
+                /* Custom styles for user avatars */
+                .user-avatar-container {
+                    position: relative;
+                    display: inline-block;
+                }
+                
+                .user-fallback {
+                    display: none;
+                    position: absolute;
+                    top: 0;
+                    left: 0;
+                    right: 0;
+                    bottom: 0;
+                }
+                
+                .gray-avatar {
+                    background-color: #e5e7eb; /* gray-300 */
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                }
+                
+                .gray-avatar svg {
+                    color: #4b5563; /* gray-600 */
                 }
             `}</style>
         </>

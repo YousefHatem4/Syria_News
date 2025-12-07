@@ -1,7 +1,7 @@
-import React, { useContext, useState } from 'react';
+import React, { useContext, useState, useEffect } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faEnvelope, faLock, faEye, faEyeSlash, faUserPlus } from '@fortawesome/free-solid-svg-icons';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useFormik } from 'formik';
 import * as Yup from 'yup';
 import axios from 'axios';
@@ -12,7 +12,7 @@ import { BASE_URL } from '../../App'
  * Login Component
  * Handles user authentication with email and password
  * Features form validation, password visibility toggle, and user context management
- * Redirects users to home page upon successful login
+ * Redirects users to home page or previous page upon successful login
  */
 export default function Login() {
     // State management for component behavior
@@ -20,15 +20,41 @@ export default function Login() {
     const [isSubmitting, setIsSubmitting] = useState(false); // Form submission state
     const [loginError, setLoginError] = useState(null); // Error message state
     const [loginSuccess, setLoginSuccess] = useState(false); // Success state
+    const [returnUrl, setReturnUrl] = useState('/'); // URL to return to after login
+    const [pendingComment, setPendingComment] = useState(''); // Pending comment text
 
     // Context and navigation hooks
     let { setUserToken, setUserId } = useContext(userContext); // User context for global state management
     let navigate = useNavigate(); // Navigation hook for page routing
+    let location = useLocation(); // Access navigation state
 
     /**
      * Toggles password visibility in the password input field
      */
     const togglePasswordVisibility = () => setShowPassword(!showPassword);
+
+    // Get return URL and pending comment on component mount
+    useEffect(() => {
+        // Get return URL from localStorage or use default
+        const storedReturnUrl = localStorage.getItem('returnUrl');
+        if (storedReturnUrl) {
+            setReturnUrl(storedReturnUrl);
+        }
+
+        // Get pending comment from localStorage
+        const storedComment = localStorage.getItem('pendingComment');
+        if (storedComment) {
+            setPendingComment(storedComment);
+        }
+
+        // Check location state for direct navigation
+        if (location.state?.from === 'comment') {
+            setReturnUrl(`/newsdetails/${location.state.articleId}`);
+            if (location.state.commentText) {
+                setPendingComment(location.state.commentText);
+            }
+        }
+    }, [location]);
 
     /**
      * Form validation schema using Yup
@@ -41,6 +67,15 @@ export default function Login() {
         password: Yup.string()
             .required('كلمة المرور مطلوبة') // Required field validation
     });
+
+    /**
+     * Clears stored navigation data
+     */
+    const clearStoredNavigationData = () => {
+        localStorage.removeItem('returnUrl');
+        localStorage.removeItem('pendingComment');
+        localStorage.removeItem('wasAddingComment');
+    };
 
     /**
      * Handles login form submission
@@ -78,7 +113,7 @@ export default function Login() {
             localStorage.setItem('userId', data.userId);
             localStorage.setItem('userEmail', data.email);
 
-            // NEW: Store the password in localStorage for use in change password page
+            // Store the password in localStorage for use in change password page
             // Note: In a real application, consider security implications
             // For demo purposes, we'll store it temporarily
             localStorage.setItem('userPassword', values.password);
@@ -89,13 +124,38 @@ export default function Login() {
                 localStorage.setItem('userRole', userRole);
             }
 
-            // Navigate to home page immediately upon successful login
-            navigate('/');
+            // Set flag to indicate user was adding comment
+            if (returnUrl.includes('/newsdetails/') || pendingComment) {
+                localStorage.setItem('wasAddingComment', 'true');
+            }
+
+            // Set a flag to indicate successful login for pending comment handling
+            localStorage.setItem('justLoggedIn', 'true');
+
+            // Navigate to return URL after successful login
+            setTimeout(() => {
+                clearStoredNavigationData();
+                navigate(returnUrl);
+            }, 500);
 
         } catch (error) {
             console.error('Login error:', error);
             // Display appropriate error message to user
-            setLoginError(error.response?.data?.message || 'حدث خطأ أثناء تسجيل الدخول. يرجى المحاولة مرة أخرى.');
+            if (error.response?.status === 401) {
+                setLoginError('اسم المستخدم أو كلمة المرور غير صحيحة');
+            } else if (error.response?.status === 400) {
+                setLoginError('بيانات الدخول غير صالحة');
+            } else if (error.response?.status === 403) {
+                setLoginError('تم تعطيل حسابك');
+            } else if (error.response?.status === 404) {
+                setLoginError('المستخدم غير موجود');
+            } else if (error.response?.status === 500) {
+                setLoginError('خطأ في الخادم. يرجى المحاولة لاحقاً');
+            } else if (!error.response) {
+                setLoginError('فشل الاتصال بالخادم. تحقق من اتصالك بالإنترنت');
+            } else {
+                setLoginError(error.response?.data?.message || 'حدث خطأ أثناء تسجيل الدخول. يرجى المحاولة مرة أخرى.');
+            }
         } finally {
             // Reset loading states regardless of success or failure
             setIsSubmitting(false);
@@ -116,6 +176,9 @@ export default function Login() {
         onSubmit: login // Submission handler
     });
 
+    // Display message if user is returning from comment attempt
+    const isReturningFromComment = returnUrl.includes('/newsdetails/') || pendingComment;
+
     return (
         // Main container with gradient background
         <div className='[background:linear-gradient(to_bottom_right,_#004025_0%,_#FFFFFFCC_80%,_transparent_100%)] min-h-[150vh] flex justify-center items-center py-10 md:py-0'>
@@ -131,6 +194,7 @@ export default function Login() {
                     <p className='text-[28px] sm:text-[36px] md:text-[48px] my-ruwudu-text font-semibold leading-[100%]'>
                         أخبار سوريا
                     </p>
+
                 </div>
 
                 {/* Right Side - Login Form */}
@@ -145,16 +209,18 @@ export default function Login() {
                             املأ البيانات التالية للدخول
                         </p>
 
+                  
+
                         {/* Success Message Display */}
                         {loginSuccess && (
-                            <div className="mt-4 p-3 bg-green-100 text-green-700 rounded text-sm">
-                                تم تسجيل الدخول بنجاح!
+                            <div className="mt-4 p-3 bg-green-100 text-green-700 rounded text-sm text-center">
+                                تم تسجيل الدخول بنجاح! يتم إعادة توجيهك الآن...
                             </div>
                         )}
 
                         {/* Error Message Display */}
                         {loginError && (
-                            <div className="mt-4 p-3 bg-red-100 text-red-700 rounded text-sm">
+                            <div className="mt-4 p-3 bg-red-100 text-red-700 rounded text-sm text-center max-w-md">
                                 {loginError}
                             </div>
                         )}
@@ -186,6 +252,7 @@ export default function Login() {
                                     onChange={formik.handleChange}
                                     onBlur={formik.handleBlur}
                                     value={formik.values.email}
+                                    autoFocus={isReturningFromComment} // Auto-focus if coming from comment
                                 />
                                 {/* Email validation error message */}
                                 {formik.touched.email && formik.errors.email ? (
@@ -236,18 +303,31 @@ export default function Login() {
                             <button
                                 type="submit"
                                 disabled={isSubmitting} // Disable during submission
-                                className='w-full sm:w-[350px] md:w-[425px] h-[40px] bg-[#00844B] text-white text-[12px] rounded-sm hover:bg-[#006C3C] transition duration-300 mb-4 disabled:bg-gray-400 disabled:cursor-not-allowed'
+                                className='w-full sm:w-[350px] md:w-[425px] h-[40px] bg-[#00844B] text-white text-[12px] rounded-sm hover:bg-[#006C3C] transition duration-300 mb-4 disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center justify-center'
                             >
                                 {isSubmitting ? 'جاري تسجيل الدخول...' : 'تسجيل الدخول'}
                                 {/* User icon for visual enhancement */}
                                 {!isSubmitting && <FontAwesomeIcon icon={faUserPlus} className="text-white text-[12px] ms-2" />}
                             </button>
+
+                            {/* Return to home button if not coming from comment */}
+                            {!isReturningFromComment && (
+                                <button
+                                    type="button"
+                                    onClick={() => navigate('/')}
+                                    className='w-full sm:w-[350px] md:w-[425px] h-[40px] bg-gray-200 text-gray-700 text-[12px] rounded-sm hover:bg-gray-300 transition duration-300 mb-4'
+                                >
+                                    العودة للصفحة الرئيسية
+                                </button>
+                            )}
                         </form>
 
                         {/* Registration Link */}
                         <div className='text-[12px] sm:text-[13px] md:text-[14px] my-Tajawal-text mt-3 sm:mt-4 leading-[100%]'>
                             ليس لديك حساب بالفعل؟ <Link to="/register" className="text-[#00844B]">عمل حساب</Link>
                         </div>
+
+                    
                     </div>
                 </div>
             </section>
