@@ -133,7 +133,7 @@ export default function Footer() {
                 {/* Company Information Section */}
                 <div className='flex flex-col items-center lg:items-end'>
                     <h1 className='text-white text-2xl font-bold my-Tajawal-text mb-3'>
-                        أخبار سوريا
+                       New Syria
                     </h1>
                     {/* Company description */}
                     <p className='text-white text-sm my-Tajawal-text text-center lg:text-right opacity-80 leading-relaxed'>
