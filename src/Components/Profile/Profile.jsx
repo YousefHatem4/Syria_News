@@ -66,6 +66,116 @@ export default function Profile() {
         return "0";
     };
 
+    // Function to fix corrupted Arabic text
+    const fixArabicText = (text) => {
+        if (!text || typeof text !== 'string') return text || '';
+
+        console.log('Original text:', text);
+        console.log('Text char codes:', Array.from(text).map(c => c.charCodeAt(0).toString(16)));
+
+        // If text already looks like proper Arabic, return it as is
+        const arabicRegex = /[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]/;
+        if (arabicRegex.test(text)) {
+            console.log('Text is already proper Arabic');
+            return text;
+        }
+
+        // Check if text is Mojibake (corrupted encoding)
+        // Common pattern for UTF-8 misinterpreted as ISO-8859-1
+        const mojibakePattern = /[ØÙÚÛÜÝÞßàáâãäåæçèéêëìíîïðñòóôõö÷øùúûüýþÿ]/;
+
+        if (mojibakePattern.test(text)) {
+            console.log('Detected Mojibake text, attempting to fix...');
+
+            try {
+                // Try to decode as if UTF-8 was misinterpreted as ISO-8859-1
+                const fixedText = decodeURIComponent(escape(text));
+                console.log('Fixed text after decodeURIComponent(escape()):', fixedText);
+
+                if (arabicRegex.test(fixedText)) {
+                    return fixedText;
+                }
+            } catch (e) {
+                console.log('Failed to fix with decodeURIComponent:', e);
+            }
+
+            // Alternative fix: Try to manually fix common Mojibake patterns
+            const fixMap = {
+                'Ø': 'ا', 'Ù': 'ب', 'Ú': 'ت', 'Û': 'ث', 'Ü': 'ج',
+                'Ý': 'ح', 'Þ': 'خ', 'ß': 'د', 'à': 'ذ', 'á': 'ر',
+                'â': 'ز', 'ã': 'س', 'ä': 'ش', 'å': 'ص', 'æ': 'ض',
+                'ç': 'ط', 'è': 'ظ', 'é': 'ع', 'ê': 'غ', 'ë': 'ـ',
+                'ì': 'ف', 'í': 'ق', 'î': 'ك', 'ï': 'ل', 'ð': 'م',
+                'ñ': 'ن', 'ò': 'ه', 'ó': 'و', 'ô': 'ى', 'õ': 'ي',
+                'ö': 'ً', '÷': 'ٌ', 'ø': 'ٍ', 'ù': 'َ', 'ú': 'ُ',
+                'û': 'ِ', 'ü': 'ّ', 'ý': 'ْ', 'þ': 'ٰ', 'ÿ': '‎'
+            };
+
+            let fixedText = text;
+            for (const [bad, good] of Object.entries(fixMap)) {
+                fixedText = fixedText.replace(new RegExp(bad, 'g'), good);
+            }
+
+            console.log('Fixed text after manual replacement:', fixedText);
+            return fixedText;
+        }
+
+        // If no fix worked, return original
+        return text;
+    };
+
+    // Function to safely extract and format user name
+    const getUserNameDisplay = () => {
+        // Priority 1: From userProfile API response (fix corrupted text)
+        if (userProfile?.userName) {
+            const fixedName = fixArabicText(userProfile.userName);
+            console.log('API userName fixed:', userProfile.userName, '→', fixedName);
+            localStorage.setItem('userName', fixedName);
+            return fixedName;
+        }
+
+        // Priority 2: From JWT token via useUserInfo hook
+        if (userName) {
+            const fixedName = fixArabicText(userName);
+            console.log('JWT userName fixed:', userName, '→', fixedName);
+            return fixedName;
+        }
+
+        // Priority 3: From localStorage as fallback
+        const storedName = localStorage.getItem('userName');
+        if (storedName) {
+            const fixedName = fixArabicText(storedName);
+            console.log('LocalStorage userName fixed:', storedName, '→', fixedName);
+            return fixedName;
+        }
+
+        // Default fallback
+        return fixArabicText('أحمد محمد');
+    };
+
+    // Function to safely extract and format email
+    const getEmailDisplay = () => {
+        // Priority 1: From userProfile API response
+        if (userProfile?.email) {
+            localStorage.setItem('userEmail', userProfile.email);
+            return userProfile.email;
+        }
+
+        // Priority 2: From JWT token via useUserInfo hook
+        if (email) {
+            return email;
+        }
+
+        // Priority 3: From localStorage as fallback
+        const storedEmail = localStorage.getItem('userEmail');
+        if (storedEmail) {
+            return storedEmail;
+        }
+
+        // Default fallback
+        return 'ahmed@example.com';
+    };
+
     // Fetch user profile data
     const fetchUserProfile = async () => {
         try {
@@ -81,8 +191,11 @@ export default function Profile() {
             const response = await axios.get(`${BASE_URL}users`, {
                 headers: {
                     'Authorization': `Bearer ${userToken}`,
-                    'Content-Type': 'application/json'
+                    'Content-Type': 'application/json; charset=utf-8', // Explicit charset
+                    'Accept': 'application/json; charset=utf-8'
                 },
+                responseType: 'json',
+                responseEncoding: 'utf-8',
                 // Handle redirects properly
                 maxRedirects: 0,
                 validateStatus: function (status) {
@@ -91,6 +204,8 @@ export default function Profile() {
             });
 
             console.log('User profile fetched:', response.data);
+            console.log('Raw userName from API:', response.data.userName);
+            console.log('Type of userName:', typeof response.data.userName);
 
             // The API is returning data even with 302 status
             setUserProfile(response.data);
@@ -100,6 +215,17 @@ export default function Profile() {
             if (response.data.role) {
                 setUserRole(response.data.role);
                 localStorage.setItem('userRole', response.data.role);
+            }
+
+            // Fix and store user name
+            if (response.data.userName) {
+                const fixedUserName = fixArabicText(response.data.userName);
+                console.log('Fixed userName for storage:', fixedUserName);
+                localStorage.setItem('userName', fixedUserName);
+            }
+
+            if (response.data.email) {
+                localStorage.setItem('userEmail', response.data.email);
             }
 
             // Set profile image if exists - fix image URL
@@ -126,12 +252,25 @@ export default function Profile() {
             // If it's a redirect but we got data, use it
             if (error.response && error.response.data) {
                 console.log('Redirect but got data:', error.response.data);
+                console.log('Raw userName from redirect:', error.response.data.userName);
+
                 setUserProfile(error.response.data);
                 setError(null);
 
                 if (error.response.data.role) {
                     setUserRole(error.response.data.role);
                     localStorage.setItem('userRole', error.response.data.role);
+                }
+
+                // Fix and store user name
+                if (error.response.data.userName) {
+                    const fixedUserName = fixArabicText(error.response.data.userName);
+                    console.log('Fixed userName from redirect:', fixedUserName);
+                    localStorage.setItem('userName', fixedUserName);
+                }
+
+                if (error.response.data.email) {
+                    localStorage.setItem('userEmail', error.response.data.email);
                 }
 
                 if (error.response.data.imageUrl) {
@@ -209,6 +348,10 @@ export default function Profile() {
     // Get the number of articles
     const userNumOfArticles = getNumOfArticles();
 
+    // Get user name and email for display
+    const displayName = getUserNameDisplay();
+    const displayEmail = getEmailDisplay();
+
     if (loading) {
         return (
             <div className='bg-[linear-gradient(167deg,#2D4639_0%,#1B1D1E_88.4%)] min-h-screen flex justify-center items-center'>
@@ -269,11 +412,26 @@ export default function Profile() {
                 </section>
 
                 {/* info of user */}
-                <h1 className='text-[#E9C882] text-right font-[Tajawal] text-[24px] md:text-[28px] not-italic font-bold leading-normal mt-6'>
-                    {userName || userProfile?.userName || 'أحمد محمد'}
+                <h1
+                    className='text-[#E9C882] text-right font-[Tajawal] text-[24px] md:text-[28px] not-italic font-bold leading-normal mt-6'
+                    dir="rtl" // Ensure RTL direction for Arabic text
+                    style={{
+                        unicodeBidi: 'plaintext', // Use plaintext for proper Arabic rendering
+                        wordBreak: 'keep-all', // Prevent unwanted line breaks in Arabic words
+                        whiteSpace: 'nowrap', // Keep Arabic names on one line
+                        overflow: 'hidden', // Handle overflow gracefully
+                        textOverflow: 'ellipsis', // Add ellipsis if text is too long
+                        maxWidth: '90%', // Limit width for very long names
+                        fontFeatureSettings: '"calt" 1, "liga" 1' // Enable Arabic ligatures
+                    }}
+                >
+                    {displayName}
                 </h1>
-                <p className='text-[#8A8A8A] text-right font-[Cairo] text-[14px] md:text-[16px] not-italic font-normal leading-[27.2px] mt-3'>
-                    {email || userProfile?.email || 'ahmed@example.com'}
+                <p
+                    className='text-[#8A8A8A] text-right font-[Cairo] text-[14px] md:text-[16px] not-italic font-normal leading-[27.2px] mt-3'
+                    dir="ltr" // Email should be LTR even in Arabic interface
+                >
+                    {displayEmail}
                 </p>
 
                 {/* Number of posts section - Updated to use numOfArticles from JWT token */}

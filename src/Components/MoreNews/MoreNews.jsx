@@ -75,7 +75,7 @@ export default function MoreNews() {
       // Create FormData for multipart/form-data request
       const formData = new FormData();
       formData.append('page', page.toString());
-      formData.append('size', '6'); // 6 posts per page
+      formData.append('size', '10'); // 6 posts per page
       formData.append('categoryName', categoryName);
       formData.append('status', 'approved'); // Only show approved posts
       formData.append('startDate', ''); // No date filter
@@ -343,7 +343,7 @@ export default function MoreNews() {
       </div>
 
       {/* Card content */}
-      <div className='flex-col p-4 flex gap-4 sm:gap-5 md:gap-6'>
+      <Link to={`/newsdetails/${post.id}`} className='flex-col p-4 flex gap-4 sm:gap-5 md:gap-6'>
         {/* Meta information - date and category */}
         <div className='flex items-center justify-end gap-4'>
           <p className='text-[#8A8A8A] text-right font-[poppins] text-[12px] font-normal leading-normal'>
@@ -366,13 +366,8 @@ export default function MoreNews() {
         </p>
 
         {/* Footer with read more link and author info */}
-        <div className='flex items-center justify-between flex-col-reverse md:flex-row gap-4 md:gap-0 '>
-          <Link
-            to={`/newsdetails/${post.id}`}
-            className='flex cursor-pointer px-[10px] py-[8px] justify-center items-center gap-2.5 rounded-[25px] border border-black/13 text-black text-right font-poppins text-[12px] font-normal leading-normal'
-          >
-            .....إقراء المزيد
-          </Link>
+        <div className='flex items-center justify-end flex-col-reverse md:flex-row gap-4 md:gap-0 '>
+
           <div className='flex items-center gap-4'>
             <h1 className='text-black text-right font-poppins text-[12px] font-normal leading-normal'>
               {post.userName || 'مجهول'}
@@ -380,7 +375,7 @@ export default function MoreNews() {
             <img src={post.userImageUrl || "profile.jpg"} className='w-[41px] h-[41px] rounded-[41px] object-cover' alt="" />
           </div>
         </div>
-      </div>
+      </Link>
     </section>
   );
 
@@ -460,7 +455,7 @@ export default function MoreNews() {
               </div>
 
               {/* Card content for second post */}
-              <div className='flex-col p-4 flex gap-4 sm:gap-5 md:gap-6 lg:gap-8'>
+              <Link to={`/newsdetails/${posts[1].id}`} className='flex-col p-4 flex gap-4  sm:gap-5 md:gap-6 lg:gap-8'>
                 <div className='flex items-center justify-end gap-4'>
                   <p className='text-[#8A8A8A] text-right font-[poppins] text-[12px] font-normal leading-normal'>
                     {formatDate(posts[1].createdAt)}
@@ -478,13 +473,8 @@ export default function MoreNews() {
                   {posts[1].bio || 'لا توجد نبذة متاحة'}
                 </p>
 
-                <div className='flex items-center justify-between flex-col-reverse md:flex-row gap-4 md:gap-0 '>
-                  <Link
-                    to={`/newsdetails/${posts[1].id}`}
-                    className='flex cursor-pointer px-[10px] py-[8px] justify-center items-center gap-2.5 rounded-[25px] border border-black/13 text-black text-right font-poppins text-[12px] font-normal leading-normal'
-                  >
-                    .....إقراء المزيد
-                  </Link>
+                <div className='flex items-center justify-end flex-col-reverse md:flex-row gap-4 md:gap-0 '>
+
                   <div className='flex items-center gap-4'>
                     <h1 className='text-black text-right font-poppins text-[12px] font-normal leading-normal'>
                       {posts[1].userName || 'مجهول'}
@@ -492,7 +482,7 @@ export default function MoreNews() {
                     <img src={posts[1].userImageUrl || "profile.jpg"} className='w-[41px] h-[41px] rounded-[41px] object-cover' alt="" />
                   </div>
                 </div>
-              </div>
+              </Link>
             </section>
           ) : posts.length === 1 ? (
             // If only one post exists, show empty state for right section
@@ -524,19 +514,19 @@ export default function MoreNews() {
           ) : posts.length > 2 ? (
             // Success state with API data - render posts in rows
             <>
-              {/* First row of posts (posts 3-5) */}
+              {/* First row of posts (posts 3-5) - FIXED WIDTH CARDS */}
               <div className='flex flex-col md:flex-row items-center justify-center gap-6 sm:gap-8 lg:gap-10'>
                 {posts.slice(2, 5).map((post, index) => (
-                  <div key={post.id || index} className={index === 2 ? 'hidden xl:block' : ''}>
+                  <div key={post.id || index} className={`${index === 2 ? 'hidden xl:block' : ''} w-full max-w-[423px]`}>
                     {renderNewsCard(post, index)}
                   </div>
                 ))}
               </div>
 
-              {/* Second row of posts (posts 6-8) - only show if enough posts */}
+              {/* Second row of posts (posts 6-8) - only show if enough posts - FIXED WIDTH CARDS */}
               <div className='flex flex-col md:flex-row items-center justify-center gap-6 sm:gap-8 lg:gap-10'>
                 {posts.slice(5, 8).map((post, index) => (
-                  <div key={post.id || index} className={index === 2 ? 'hidden xl:block' : ''}>
+                  <div key={post.id || index} className={`${index === 2 ? 'hidden xl:block' : ''} w-full max-w-[423px]`}>
                     {renderNewsCard(post, index)}
                   </div>
                 ))}
