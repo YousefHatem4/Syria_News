@@ -13,6 +13,11 @@ export default function UserPosts() {
   const [currentPage, setCurrentPage] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
   const [imageLoadingStates, setImageLoadingStates] = useState({});
+
+  // Delete state
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState(null);
+
   let { userToken } = useContext(userContext);
   const navigate = useNavigate();
 
@@ -149,13 +154,69 @@ export default function UserPosts() {
   };
 
   /**
-   * Handles delete button click (prevents navigation when clicking delete)
+   * Handles delete button click - deletes the post using DELETE /articles/{articleId} API
    */
-  const handleDeleteClick = (e, articleId) => {
+  const handleDeleteClick = async (e, articleId, articleTitle) => {
     e.stopPropagation(); // Prevent navigation when clicking delete
-    // Add your delete logic here
-    console.log('Delete post:', articleId);
-    // You can add a confirmation modal and API call here
+
+    // Show confirmation dialog
+    const isConfirmed = window.confirm(`هل أنت متأكد من رغبتك في حذف المقال "${articleTitle}"؟`);
+
+    if (!isConfirmed) {
+      return;
+    }
+
+    setIsDeleting(true);
+    setDeleteError(null);
+
+    try {
+      // Call DELETE API
+      const response = await axios.delete(`${BASE_URL}articles/${articleId}`, {
+        headers: userToken ? {
+          'Authorization': `Bearer ${userToken}`,
+          'Accept': 'application/json',
+        } : {
+          'Accept': 'application/json',
+        }
+      });
+
+      if (response.status === 200 || response.status === 204) {
+        // Show success message
+        alert('تم حذف المقال بنجاح');
+
+        // Remove deleted post from local state
+        setUserPosts(prevPosts => prevPosts.filter(post => post.articleId !== articleId));
+
+        // If we're on a page that might now be empty, go to previous page
+        if (userPosts.length === 1 && currentPage > 0) {
+          handlePageChange(currentPage - 1);
+        } else {
+          // Otherwise just refresh the current page
+          fetchUserPosts(currentPage);
+        }
+      } else {
+        throw new Error('فشل في حذف المقال');
+      }
+    } catch (error) {
+      console.error('Error deleting post:', error);
+
+      let errorMessage = 'فشل في حذف المقال';
+
+      if (error.response?.status === 401) {
+        errorMessage = 'غير مصرح لك بحذف هذا المقال';
+      } else if (error.response?.status === 403) {
+        errorMessage = 'ليس لديك صلاحية لحذف هذا المقال';
+      } else if (error.response?.status === 404) {
+        errorMessage = 'المقال غير موجود';
+      } else if (error.response?.status === 500) {
+        errorMessage = 'خطأ في الخادم. يرجى المحاولة لاحقاً';
+      }
+
+      setDeleteError(errorMessage);
+      alert(errorMessage);
+    } finally {
+      setIsDeleting(false);
+    }
   };
 
   useEffect(() => {
@@ -231,11 +292,15 @@ export default function UserPosts() {
 
                   <div className='flex justify-between w-full'>
                     <div
-                      className='text-[var(--Gray,#8A8A8A)] cursor-pointer ms-4 text-right font-[Poppins] text-[11px] md:text-xs not-italic font-normal leading-normal flex items-center gap-1 hover:text-red-500 transition-colors'
-                      onClick={(e) => handleDeleteClick(e, post.articleId)}
+                      className={`text-[var(--Gray,#8A8A8A)] cursor-pointer ms-4 text-right font-[Poppins] text-[11px] md:text-xs not-italic font-normal leading-normal flex items-center gap-1 hover:text-red-500 transition-colors ${isDeleting ? 'opacity-50 cursor-not-allowed' : ''}`}
+                      onClick={(e) => !isDeleting && handleDeleteClick(e, post.articleId, post.header)}
+                      disabled={isDeleting}
                     >
-                      <p>حذف</p>
-                      <FontAwesomeIcon className='text-[#000000] hover:text-red-500 transition-colors' icon={faTrashCan} />
+                      <p>{isDeleting ? 'جاري الحذف...' : 'حذف'}</p>
+                      <FontAwesomeIcon
+                        className={`${isDeleting ? 'text-gray-400' : 'text-[#000000]'} hover:text-red-500 transition-colors`}
+                        icon={faTrashCan}
+                      />
                     </div>
 
                     <div className='text-[var(--Gray,#8A8A8A)] text-right font-[Poppins] text-[11px] md:text-xs not-italic font-normal leading-normal flex items-center gap-2'>
