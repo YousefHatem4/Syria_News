@@ -192,7 +192,7 @@ export default function Login() {
                         مرحبا بك في موقع
                     </h2>
                     <p className='text-[28px] sm:text-[36px] md:text-[48px] my-ruwudu-text font-semibold leading-[100%]'>
-                        أخبار سوريا
+                       New Syria.news
                     </p>
 
                 </div>
