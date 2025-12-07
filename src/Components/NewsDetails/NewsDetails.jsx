@@ -53,6 +53,97 @@ export default function NewsDetails() {
     // Check if user is admin
     const isAdmin = role === 'ROLE_ADMIN';
 
+    // Function to fix corrupted Arabic text (Mojibake issue)
+    const fixArabicText = (text) => {
+        if (!text || typeof text !== 'string') return text || '';
+
+        console.log('Original text to fix:', text);
+        console.log('Text char codes:', Array.from(text).map(c => c.charCodeAt(0).toString(16)));
+
+        // If text already looks like proper Arabic, return it as is
+        const arabicRegex = /[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]/;
+        if (arabicRegex.test(text)) {
+            console.log('Text is already proper Arabic');
+            return text;
+        }
+
+        // Check if text is Mojibake (corrupted encoding) - UTF-8 misinterpreted as ISO-8859-1
+        const mojibakePattern = /[ØÙÚÛÜÝÞßàáâãäåæçèéêëìíîïðñòóôõö÷øùúûüýþÿ]/;
+
+        if (mojibakePattern.test(text)) {
+            console.log('Detected Mojibake text, attempting to fix...');
+
+            try {
+                // Try to decode as if UTF-8 was misinterpreted as ISO-8859-1
+                const fixedText = decodeURIComponent(escape(text));
+                console.log('Fixed text after decodeURIComponent(escape()):', fixedText);
+
+                if (arabicRegex.test(fixedText)) {
+                    return fixedText;
+                }
+            } catch (e) {
+                console.log('Failed to fix with decodeURIComponent:', e);
+            }
+
+            // Alternative fix: Try to manually fix common Mojibake patterns
+            const fixMap = {
+                'Ø': 'ا', 'Ù': 'ب', 'Ú': 'ت', 'Û': 'ث', 'Ü': 'ج',
+                'Ý': 'ح', 'Þ': 'خ', 'ß': 'د', 'à': 'ذ', 'á': 'ر',
+                'â': 'ز', 'ã': 'س', 'ä': 'ش', 'å': 'ص', 'æ': 'ض',
+                'ç': 'ط', 'è': 'ظ', 'é': 'ع', 'ê': 'غ', 'ë': 'ـ',
+                'ì': 'ف', 'í': 'ق', 'î': 'ك', 'ï': 'ل', 'ð': 'م',
+                'ñ': 'ن', 'ò': 'ه', 'ó': 'و', 'ô': 'ى', 'õ': 'ي',
+                'ö': 'ً', '÷': 'ٌ', 'ø': 'ٍ', 'ù': 'َ', 'ú': 'ُ',
+                'û': 'ِ', 'ü': 'ّ', 'ý': 'ْ', 'þ': 'ٰ', 'ÿ': '‎'
+            };
+
+            let fixedText = text;
+            for (const [bad, good] of Object.entries(fixMap)) {
+                fixedText = fixedText.replace(new RegExp(bad, 'g'), good);
+            }
+
+            console.log('Fixed text after manual replacement:', fixedText);
+            return fixedText;
+        }
+
+        // If no fix worked, return original
+        return text;
+    };
+
+    // Function to properly format and fix Arabic user names
+    const getFixedUserName = (userName) => {
+        if (!userName) return 'مستخدم';
+
+        const fixedName = fixArabicText(userName);
+
+        // Ensure proper Arabic text rendering with RTL support
+        return fixedName;
+    };
+
+    // Function to properly render user name in HTML
+    const renderUserName = (userName) => {
+        const fixedName = getFixedUserName(userName);
+
+        return (
+            <span
+                dir="rtl"
+                style={{
+                    unicodeBidi: 'plaintext',
+                    wordBreak: 'keep-all',
+                    whiteSpace: 'nowrap',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    maxWidth: '120px',
+                    display: 'inline-block',
+                    direction: 'rtl',
+                    fontFamily: "'Tajawal', 'Cairo', sans-serif"
+                }}
+            >
+                {fixedName}
+            </span>
+        );
+    };
+
     // Function to save like state to localStorage
     const saveLikeToLocalStorage = (articleId, likedState) => {
         const savedLikes = JSON.parse(localStorage.getItem('articleLikes') || '{}');
@@ -153,7 +244,7 @@ export default function NewsDetails() {
                     <img
                         src={imageUrl}
                         className={`w-[${size}] h-[${size}] rounded-full object-cover`}
-                        alt={userName || "صورة المستخدم"}
+                        alt={getFixedUserName(userName) || "صورة المستخدم"}
                         onError={(e) => handleImageError(e, true)}
                     />
                 </div>
@@ -183,7 +274,7 @@ export default function NewsDetails() {
                     <img
                         src={imageUrl}
                         className={`w-[${size}] h-[${size}] rounded-full object-cover`}
-                        alt={userName}
+                        alt={getFixedUserName(userName)}
                         onError={(e) => handleImageError(e, true)}
                     />
                 </div>
@@ -245,13 +336,23 @@ export default function NewsDetails() {
             const response = await axios.get(`${BASE_URL}articles/${id}`, {
                 headers: userToken ? {
                     'Authorization': `Bearer ${userToken}`,
-                    'Accept': 'application/json',
+                    'Accept': 'application/json; charset=utf-8',
                 } : {
-                    'Accept': 'application/json',
-                }
+                    'Accept': 'application/json; charset=utf-8',
+                },
+                responseType: 'json',
+                responseEncoding: 'utf-8'
             });
 
-            setArticle(response.data);
+            // Fix any Arabic text in the article data
+            const fixedArticleData = {
+                ...response.data,
+                header: fixArabicText(response.data.header),
+                bio: fixArabicText(response.data.bio),
+                userName: response.data.userName ? getFixedUserName(response.data.userName) : response.data.userName
+            };
+
+            setArticle(fixedArticleData);
 
             // Check if the current user has liked this article from localStorage
             const savedLikeState = getLikeFromLocalStorage(id);
@@ -288,14 +389,26 @@ export default function NewsDetails() {
                 },
                 headers: userToken ? {
                     'Authorization': `Bearer ${userToken}`,
-                    'Accept': 'application/json',
+                    'Accept': 'application/json; charset=utf-8',
                 } : {
-                    'Accept': 'application/json',
-                }
+                    'Accept': 'application/json; charset=utf-8',
+                },
+                responseType: 'json',
+                responseEncoding: 'utf-8'
             });
 
             if (response.data && Array.isArray(response.data.content)) {
-                setComments(response.data.content);
+                // Fix Arabic text in comments
+                const fixedComments = response.data.content.map(comment => ({
+                    ...comment,
+                    commentContent: fixArabicText(comment.commentContent),
+                    user: comment.user ? {
+                        ...comment.user,
+                        userName: getFixedUserName(comment.user.userName)
+                    } : comment.user
+                }));
+
+                setComments(fixedComments);
                 setCommentsTotalPages(response.data.totalPages || 1);
                 setCommentsCurrentPage(page);
                 setCommentsTotalElements(response.data.totalElements || response.data.content.length);
@@ -555,8 +668,16 @@ export default function NewsDetails() {
             });
 
             if (response.data && response.data.content) {
-                // Filter out the current article using the UUID
-                const filteredPosts = response.data.content.filter(post => post.id !== id);
+                // Filter out the current article using the UUID and fix Arabic text
+                const filteredPosts = response.data.content
+                    .filter(post => post.id !== id)
+                    .map(post => ({
+                        ...post,
+                        header: fixArabicText(post.header),
+                        bio: fixArabicText(post.bio),
+                        userName: post.userName ? getFixedUserName(post.userName) : post.userName
+                    }));
+
                 setRelatedPosts(filteredPosts);
                 setRelatedTotalPages(response.data.totalPages || 1);
                 setRelatedCurrentPage(page);
@@ -842,7 +963,7 @@ export default function NewsDetails() {
                                     <div className='w-full sm:w-[95%] md:w-[90%] lg:w-[85%] xl:w-[802px] min-h-[120px] sm:min-h-[130px] md:min-h-[140px] lg:min-h-[154.33px] rounded-[12px] sm:rounded-[15px] border-l-[3px] sm:border-l-[4px] border-[#00844B] bg-[rgba(255,255,255,0.09)] flex p-[20px] sm:p-[24px] md:p-[28px] lg:p-[32px_32px_32px_36px] flex-col items-start gap-2 border-r-[3px] sm:border-r-[4px]'>
 
                                         <h1 className='text-white text-right font-poppins text-[14px] sm:text-[16px] md:text-[18px] lg:text-[20px] not-italic font-semibold leading-normal'>
-                                            {section.content}
+                                            {fixArabicText(section.content)}
                                         </h1>
                                     </div>
                                 )}
@@ -919,8 +1040,19 @@ export default function NewsDetails() {
                                 )}
 
                                 <div className='flex items-center gap-3 mt-2 sm:mt-0'>
-                                    <h1 className='font-poppins font-normal text-[11px] sm:text-[12px] leading-[100%] tracking-[0%] text-right align-middle text-[#FFFFFF]'>
-                                        {checkAuthentication() ? (userName || 'أنت') : 'زائر'}
+                                    <h1
+                                        className='font-poppins font-normal text-[11px] sm:text-[12px] leading-[100%] tracking-[0%] text-right align-middle text-[#FFFFFF]'
+                                        dir="rtl"
+                                        style={{
+                                            unicodeBidi: 'plaintext',
+                                            wordBreak: 'keep-all',
+                                            whiteSpace: 'nowrap',
+                                            overflow: 'hidden',
+                                            textOverflow: 'ellipsis',
+                                            maxWidth: '120px'
+                                        }}
+                                    >
+                                        {checkAuthentication() ? getFixedUserName(userName) || 'أنت' : 'زائر'}
                                     </h1>
                                     <div className="relative">
                                         {checkAuthentication() ? (
@@ -969,9 +1101,20 @@ export default function NewsDetails() {
 
                                         {/* Right side - User info */}
                                         <div className='flex items-center gap-3 self-end sm:self-auto'>
-                                            <h1 className='font-poppins font-normal text-[11px] sm:text-[12px] leading-[100%] tracking-[0%] text-right align-middle text-[#FFFFFF]'>
-                                                {comments[0].user?.userName || 'مستخدم'}
-                                            </h1>
+                                            <div
+                                                className='font-poppins font-normal text-[11px] sm:text-[12px] leading-[100%] tracking-[0%] text-right align-middle text-[#FFFFFF]'
+                                                dir="rtl"
+                                                style={{
+                                                    unicodeBidi: 'plaintext',
+                                                    wordBreak: 'keep-all',
+                                                    whiteSpace: 'nowrap',
+                                                    overflow: 'hidden',
+                                                    textOverflow: 'ellipsis',
+                                                    maxWidth: '120px'
+                                                }}
+                                            >
+                                                {renderUserName(comments[0].user?.userName)}
+                                            </div>
                                             {renderCommentUserAvatar(comments[0].user, "35px")}
                                         </div>
                                     </div>
@@ -1002,9 +1145,20 @@ export default function NewsDetails() {
 
                                             {/* Right side - User info */}
                                             <div className='flex items-center gap-3 self-end sm:self-auto'>
-                                                <h1 className='font-poppins font-normal text-[11px] sm:text-[12px] leading-[100%] tracking-[0%] text-right align-middle text-[#FFFFFF]'>
-                                                    {comment.user?.userName || 'مستخدم'}
-                                                </h1>
+                                                <div
+                                                    className='font-poppins font-normal text-[11px] sm:text-[12px] leading-[100%] tracking-[0%] text-right align-middle text-[#FFFFFF]'
+                                                    dir="rtl"
+                                                    style={{
+                                                        unicodeBidi: 'plaintext',
+                                                        wordBreak: 'keep-all',
+                                                        whiteSpace: 'nowrap',
+                                                        overflow: 'hidden',
+                                                        textOverflow: 'ellipsis',
+                                                        maxWidth: '120px'
+                                                    }}
+                                                >
+                                                    {renderUserName(comment.user?.userName)}
+                                                </div>
                                                 {renderCommentUserAvatar(comment.user, "35px")}
                                             </div>
                                         </div>
@@ -1105,22 +1259,32 @@ export default function NewsDetails() {
 
                                                 <div className='flex items-center justify-end flex-col-reverse sm:flex-row gap-3 sm:gap-0 mt-auto pt-2'>
                                                     <div className='flex items-center gap-3'>
-                                                        <h1 className='text-black text-right font-poppins text-[11px] sm:text-[12px] font-normal leading-normal'>
-                                                            {post.userName || 'مجهول'}
-                                                        </h1>
+                                                        <div
+                                                            className='text-black text-right font-poppins  text-[11px] sm:text-[12px] font-normal leading-normal'
+                                                            dir="rtl"
+                                                            style={{
+                                                                unicodeBidi: 'plaintext',
+                                                                wordBreak: 'keep-all',
+                                                                whiteSpace: 'nowrap',
+                                                                textOverflow: 'ellipsis',
+                                                                maxWidth: '100px'
+                                                            }}
+                                                        >
+                                                            {renderUserName(post.userName)}
+                                                        </div>
                                                         <div className="relative">
                                                             {post.userImageUrl ? (
                                                                 <img
                                                                     src={post.userImageUrl}
-                                                                    className='w-[35px] h-[35px] sm:w-[41px] sm:h-[41px] rounded-full object-cover'
-                                                                    alt={post.publisher?.username || "صورة الناشر"}
+                                                                    className='w-[35px] h-[35px]  sm:w-[41px] sm:h-[41px] rounded-full object-cover'
+                                                                    alt={renderUserName(post.userName) || "صورة الناشر"}
                                                                     onError={(e) => handleImageError(e, true)}
                                                                 />
                                                             ) : (
-                                                                <div className="w-[35px] h-[35px] sm:w-[41px] sm:h-[41px] rounded-full bg-gray-300 flex items-center justify-center">
+                                                                <div className="w-[35px] h-[35px]  sm:w-[41px] sm:h-[41px] rounded-full bg-gray-300 flex items-center justify-center">
                                                                     <FontAwesomeIcon
                                                                         icon={faUser}
-                                                                        className="text-gray-600 text-sm"
+                                                                        className="text-gray-600 text-sm "
                                                                     />
                                                                 </div>
                                                             )}
