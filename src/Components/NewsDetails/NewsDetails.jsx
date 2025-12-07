@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useContext } from 'react'
 import style from './NewsDetails.module.css'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faAngleLeft, faAngleRight, faCheckCircle, faUser } from '@fortawesome/free-solid-svg-icons';
+import { faAngleLeft, faAngleRight, faCheckCircle, faUser, faTrashCan } from '@fortawesome/free-solid-svg-icons';
 import { faThumbsUp, faEye, faCalendar, faComment, faClock } from '@fortawesome/free-regular-svg-icons';
 import { Link, useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
@@ -22,7 +22,7 @@ export default function NewsDetails() {
     const navigate = useNavigate();
 
     // Get user info from custom hook
-    const { userImage, userName, isAuthenticated } = useUserInfo();
+    const { userImage, userName, isAuthenticated, role } = useUserInfo();
 
     // API States
     const [article, setArticle] = useState(null);
@@ -35,11 +35,18 @@ export default function NewsDetails() {
     const [commentsTotalElements, setCommentsTotalElements] = useState(0);
     const [isSubmittingComment, setIsSubmittingComment] = useState(false);
 
+    // Delete comment state
+    const [isDeletingComment, setIsDeletingComment] = useState(false);
+    const [deletingCommentId, setDeletingCommentId] = useState(null);
+
     // Related posts states
     const [relatedPosts, setRelatedPosts] = useState([]);
     const [relatedLoading, setRelatedLoading] = useState(true);
     const [relatedCurrentPage, setRelatedCurrentPage] = useState(0);
     const [relatedTotalPages, setRelatedTotalPages] = useState(0);
+
+    // Check if user is admin
+    const isAdmin = role === 'ROLE_ADMIN';
 
     // Function to check authentication
     const checkAuthentication = () => {
@@ -335,6 +342,71 @@ export default function NewsDetails() {
                 setTimeout(() => setShowToast(false), 3000);
             }
             return false;
+        }
+    };
+
+    // Handle delete comment functionality
+    const handleDeleteComment = async (commentId) => {
+        if (!isAdmin) {
+            setToastMessage('غير مصرح لك بحذف التعليقات');
+            setShowToast(true);
+            setTimeout(() => setShowToast(false), 3000);
+            return;
+        }
+
+        const isConfirmed = window.confirm('هل أنت متأكد من رغبتك في حذف هذا التعليق؟');
+
+        if (!isConfirmed) {
+            return;
+        }
+
+        setIsDeletingComment(true);
+        setDeletingCommentId(commentId);
+
+        try {
+            const response = await axios.delete(`${BASE_URL}articles/comments/${commentId}`, {
+                headers: userToken ? {
+                    'Authorization': `Bearer ${userToken}`,
+                    'Accept': 'application/json',
+                } : {
+                    'Accept': 'application/json',
+                }
+            });
+
+            if (response.status === 200 || response.status === 204) {
+                // Show success message
+                setToastMessage('تم حذف التعليق بنجاح');
+                setShowToast(true);
+
+                // Remove deleted comment from local state
+                setComments(prevComments => prevComments.filter(comment => comment.id !== commentId));
+
+                // Update total elements count
+                setCommentsTotalElements(prev => Math.max(0, prev - 1));
+            } else {
+                throw new Error('فشل في حذف التعليق');
+            }
+        } catch (error) {
+            console.error('Error deleting comment:', error);
+
+            let errorMessage = 'فشل في حذف التعليق';
+
+            if (error.response?.status === 401) {
+                errorMessage = 'غير مصرح لك بحذف هذا التعليق';
+            } else if (error.response?.status === 403) {
+                errorMessage = 'ليس لديك صلاحية لحذف هذا التعليق';
+            } else if (error.response?.status === 404) {
+                errorMessage = 'التعليق غير موجود';
+            } else if (error.response?.status === 500) {
+                errorMessage = 'خطأ في الخادم. يرجى المحاولة لاحقاً';
+            }
+
+            setToastMessage(errorMessage);
+            setShowToast(true);
+        } finally {
+            setIsDeletingComment(false);
+            setDeletingCommentId(null);
+            setTimeout(() => setShowToast(false), 3000);
         }
     };
 
@@ -803,34 +875,71 @@ export default function NewsDetails() {
                                 </div>
                             ) : comments.length > 0 ? (
                                 <>
-                                    {/* Display first comment (always visible) */}
-                                    <div className='w-full min-h-[67px] border-t border-t-[#000000] p-[13px] gap-2 bg-[#2D4639] opacity-100 flex flex-col sm:flex-row items-start sm:items-center justify-between'>
-                                        <h1 className='font-poppins font-normal text-[11px] sm:text-[12px] leading-[150%] sm:leading-[100%] tracking-[0%] text-right align-middle text-[#FFFFFF] flex-1 mb-2 sm:mb-0'>
-                                            {comments[0].commentContent}
-                                        </h1>
-                                        <div className='flex items-center gap-3 self-end sm:self-auto'>
-                                            <h1 className='font-poppins font-normal text-[11px] sm:text-[12px] leading-[100%] tracking-[0%] text-right align-middle text-[#FFFFFF]'>
-                                                {comments[0].user?.userName || 'مستخدم'}
-                                            </h1>
-                                            {renderCommentUserAvatar(comments[0].user, "35px")}
-                                        </div>
-                                    </div>
+                                        {/* Display first comment (always visible) */}
+                                        <div className='w-full min-h-[67px] border-t border-t-[#000000] p-[13px] gap-2 bg-[#2D4639] opacity-100 flex flex-col sm:flex-row items-start sm:items-center justify-between'>
+                                            {/* Left side - Delete button for admin only */}
+                                            <div className='flex items-center gap-3 self-start sm:self-auto mb-2 sm:mb-0'>
+                                                {isAdmin && (
+                                                    <div
+                                                        className={`text-[#FFFFFFAD] cursor-pointer text-right font-[Poppins] text-[10px] sm:text-[11px] not-italic font-normal leading-normal flex items-center gap-1 hover:text-red-500 transition-colors ${isDeletingComment && deletingCommentId === comments[0].id ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                                        onClick={() => !(isDeletingComment && deletingCommentId === comments[0].id) && handleDeleteComment(comments[0].id)}
+                                                    >
+                                                        <p>{isDeletingComment && deletingCommentId === comments[0].id ? 'جاري الحذف...' : 'حذف'}</p>
+                                                        <FontAwesomeIcon
+                                                            className={`${isDeletingComment && deletingCommentId === comments[0].id ? 'text-gray-400' : 'text-[#FFFFFFAD]'} hover:text-red-500 transition-colors`}
+                                                            icon={faTrashCan}
+                                                        />
+                                                    </div>
+                                                )}
+                                            </div>
 
-                                    {/* Display all other comments when toggled */}
-                                    {showAllComments && comments.slice(1).map((comment) => (
-                                        <div key={comment.id} className='w-full min-h-[67px] border-t border-t-[#000000] p-[13px] gap-2 bg-[#2D4639] opacity-100 flex flex-col sm:flex-row items-start sm:items-center justify-between'>
-                                            <h1 className='font-poppins font-normal text-[11px] sm:text-[12px] leading-[150%] sm:leading-[100%] tracking-[0%] text-right align-middle text-[#FFFFFF] flex-1 mb-2 sm:mb-0'>
-                                                {comment.commentContent}
+                                            {/* Middle - Comment content */}
+                                            <h1 className='font-poppins font-normal text-[11px] sm:text-[12px] leading-[150%] sm:leading-[100%] tracking-[0%] text-right align-middle text-[#FFFFFF] flex-1 mb-2 sm:mb-0 px-2'>
+                                                {comments[0].commentContent}
                                             </h1>
+
+                                            {/* Right side - User info */}
                                             <div className='flex items-center gap-3 self-end sm:self-auto'>
                                                 <h1 className='font-poppins font-normal text-[11px] sm:text-[12px] leading-[100%] tracking-[0%] text-right align-middle text-[#FFFFFF]'>
-                                                    {comment.user?.userName || 'مستخدم'}
+                                                    {comments[0].user?.userName || 'مستخدم'}
                                                 </h1>
-                                                {renderCommentUserAvatar(comment.user, "35px")}
+                                                {renderCommentUserAvatar(comments[0].user, "35px")}
                                             </div>
                                         </div>
-                                    ))}
 
+                                        {/* Display all other comments when toggled */}
+                                        {showAllComments && comments.slice(1).map((comment) => (
+                                            <div key={comment.id} className='w-full min-h-[67px] border-t border-t-[#000000] p-[13px] gap-2 bg-[#2D4639] opacity-100 flex flex-col sm:flex-row items-start sm:items-center justify-between'>
+                                                {/* Left side - Delete button for admin only */}
+                                                <div className='flex items-center gap-3 self-start sm:self-auto mb-2 sm:mb-0'>
+                                                    {isAdmin && (
+                                                        <div
+                                                            className={`text-[#FFFFFFAD] cursor-pointer text-right font-[Poppins] text-[10px] sm:text-[11px] not-italic font-normal leading-normal flex items-center gap-1 hover:text-red-500 transition-colors ${isDeletingComment && deletingCommentId === comment.id ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                                            onClick={() => !(isDeletingComment && deletingCommentId === comment.id) && handleDeleteComment(comment.id)}
+                                                        >
+                                                            <p>{isDeletingComment && deletingCommentId === comment.id ? 'جاري الحذف...' : 'حذف'}</p>
+                                                            <FontAwesomeIcon
+                                                                className={`${isDeletingComment && deletingCommentId === comment.id ? 'text-gray-400' : 'text-[#FFFFFFAD]'} hover:text-red-500 transition-colors`}
+                                                                icon={faTrashCan}
+                                                            />
+                                                        </div>
+                                                    )}
+                                                </div>
+
+                                                {/* Middle - Comment content */}
+                                                <h1 className='font-poppins font-normal text-[11px] sm:text-[12px] leading-[150%] sm:leading-[100%] tracking-[0%] text-right align-middle text-[#FFFFFF] flex-1 mb-2 sm:mb-0 px-2'>
+                                                    {comment.commentContent}
+                                                </h1>
+
+                                                {/* Right side - User info */}
+                                                <div className='flex items-center gap-3 self-end sm:self-auto'>
+                                                    <h1 className='font-poppins font-normal text-[11px] sm:text-[12px] leading-[100%] tracking-[0%] text-right align-middle text-[#FFFFFF]'>
+                                                        {comment.user?.userName || 'مستخدم'}
+                                                    </h1>
+                                                    {renderCommentUserAvatar(comment.user, "35px")}
+                                                </div>
+                                            </div>
+                                        ))}
                                     {/* Comments Pagination */}
                                     {commentsTotalPages > 1 && (
                                         <div className='flex gap-2 items-center justify-center mt-4 p-4 bg-[#2D4639]'>
